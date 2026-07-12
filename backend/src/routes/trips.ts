@@ -67,15 +67,48 @@ async function validateDriverForTrip(driverId: string) {
 // ─── Routes ──────────────────────────────────────────────────────────────────
 
 // GET /api/trips
-router.get('/', async (_req, res) => {
+router.get('/', async (req, res) => {
+  const page = parseInt(req.query.page as string) || 1;
+  const limit = parseInt(req.query.limit as string) || 50;
+  const search = req.query.search as string;
+  const status = req.query.status as any;
+  const dateStart = req.query.dateStart as string;
+  const dateEnd = req.query.dateEnd as string;
+
+  const where: any = {};
+  if (search) {
+    where.OR = [
+      { vehicle: { registrationNumber: { contains: search, mode: 'insensitive' } } },
+      { driver: { name: { contains: search, mode: 'insensitive' } } },
+      { source: { contains: search, mode: 'insensitive' } },
+      { destination: { contains: search, mode: 'insensitive' } },
+    ];
+  }
+  if (status && status !== 'ALL') where.status = status;
+  if (dateStart || dateEnd) {
+    where.createdAt = {};
+    if (dateStart) where.createdAt.gte = new Date(dateStart);
+    if (dateEnd) where.createdAt.lte = new Date(dateEnd);
+  }
+
+  const total = await prisma.trip.count({ where });
   const trips = await prisma.trip.findMany({
+    where,
     orderBy: { createdAt: 'desc' },
+    skip: (page - 1) * limit,
+    take: limit,
     include: {
       vehicle: { select: { id: true, registrationNumber: true, name: true, type: true } },
       driver: { select: { id: true, name: true, licenseCategory: true } },
     },
   });
-  res.json(trips);
+
+  res.json({
+    data: trips,
+    total,
+    page,
+    totalPages: Math.ceil(total / limit),
+  });
 });
 
 // GET /api/trips/:id

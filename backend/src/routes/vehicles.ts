@@ -10,14 +10,40 @@ const prisma = new PrismaClient();
 router.use(requireAuth);
 
 // GET /api/vehicles
-router.get('/', async (_req, res) => {
+router.get('/', async (req, res) => {
+  const page = parseInt(req.query.page as string) || 1;
+  const limit = parseInt(req.query.limit as string) || 50;
+  const search = req.query.search as string;
+  const status = req.query.status as any;
+  const type = req.query.type as string;
+
+  const where: any = {};
+  if (search) {
+    where.OR = [
+      { registrationNumber: { contains: search, mode: 'insensitive' } },
+      { name: { contains: search, mode: 'insensitive' } },
+    ];
+  }
+  if (status && status !== 'ALL') where.status = status;
+  if (type && type !== 'ALL') where.type = type;
+
+  const total = await prisma.vehicle.count({ where });
   const vehicles = await prisma.vehicle.findMany({
+    where,
     orderBy: { createdAt: 'desc' },
+    skip: (page - 1) * limit,
+    take: limit,
     include: {
       _count: { select: { trips: true, maintenanceLogs: true } },
     },
   });
-  res.json(vehicles);
+
+  res.json({
+    data: vehicles,
+    total,
+    page,
+    totalPages: Math.ceil(total / limit),
+  });
 });
 
 // GET /api/vehicles/:id

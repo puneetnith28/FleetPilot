@@ -46,13 +46,22 @@ const emptyForm: TripForm = {
 export function TripsPage() {
   const qc = useQueryClient();
   const { toast } = useToast();
+  const [page, setPage] = useState(1);
   const [search, setSearch] = useState('');
   const [filterStatus, setFilterStatus] = useState('ALL');
+  const [dateStart, setDateStart] = useState('');
+  const [dateEnd, setDateEnd] = useState('');
   const [dialogOpen, setDialogOpen] = useState(false);
   const [form, setForm] = useState<TripForm>(emptyForm);
   const [formError, setFormError] = useState('');
 
-  const { data: trips = [], isLoading } = useQuery({ queryKey: ['trips'], queryFn: tripsApi.list });
+  const { data: tripsResponse, isLoading } = useQuery({
+    queryKey: ['trips', page, search, filterStatus, dateStart, dateEnd],
+    queryFn: () => tripsApi.list({ page, limit: 10, search, status: filterStatus, dateStart, dateEnd }),
+  });
+  const trips = tripsResponse?.data || [];
+  const total = tripsResponse?.total || 0;
+  const totalPages = tripsResponse?.totalPages || 1;
   const { data: vehicles = [] } = useQuery({ queryKey: ['vehicles'], queryFn: vehiclesApi.list });
   const { data: drivers = [] } = useQuery({ queryKey: ['drivers'], queryFn: driversApi.list });
 
@@ -83,14 +92,7 @@ export function TripsPage() {
     },
   });
 
-  const filtered = trips.filter((t: any) => {
-    const matchSearch =
-      t.source?.toLowerCase().includes(search.toLowerCase()) ||
-      t.destination?.toLowerCase().includes(search.toLowerCase()) ||
-      t.vehicle?.registrationNumber?.toLowerCase().includes(search.toLowerCase());
-    const matchStatus = filterStatus === 'ALL' || t.status === filterStatus;
-    return matchSearch && matchStatus;
-  });
+
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -114,7 +116,7 @@ export function TripsPage() {
           <h1 className="text-2xl font-bold flex items-center gap-2">
             <Route className="h-6 w-6 text-primary" /> Trip Management
           </h1>
-          <p className="text-muted-foreground text-sm mt-1">{trips.length} trips total</p>
+          <p className="text-muted-foreground text-sm mt-1">{total} trips total</p>
         </div>
         <Button onClick={() => { setForm(emptyForm); setFormError(''); setDialogOpen(true); }} className="gap-2">
           <Plus className="h-4 w-4" /> New Trip
@@ -130,10 +132,10 @@ export function TripsPage() {
               placeholder="Search source, destination, vehicle..."
               className="pl-9"
               value={search}
-              onChange={(e) => setSearch(e.target.value)}
+              onChange={(e) => { setSearch(e.target.value); setPage(1); }}
             />
           </div>
-          <Select value={filterStatus} onValueChange={setFilterStatus}>
+          <Select value={filterStatus} onValueChange={(v) => { setFilterStatus(v); setPage(1); }}>
             <SelectTrigger className="w-44">
               <SelectValue placeholder="All Statuses" />
             </SelectTrigger>
@@ -145,6 +147,11 @@ export function TripsPage() {
               <SelectItem value="CANCELLED">Cancelled</SelectItem>
             </SelectContent>
           </Select>
+          <div className="flex items-center gap-2">
+            <Input type="date" value={dateStart} onChange={(e) => { setDateStart(e.target.value); setPage(1); }} />
+            <span className="text-muted-foreground">-</span>
+            <Input type="date" value={dateEnd} onChange={(e) => { setDateEnd(e.target.value); setPage(1); }} />
+          </div>
         </CardContent>
       </Card>
 
@@ -155,7 +162,7 @@ export function TripsPage() {
             <div className="flex justify-center py-16">
               <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
             </div>
-          ) : filtered.length === 0 ? (
+          ) : trips.length === 0 ? (
             <div className="flex flex-col items-center py-16 text-muted-foreground gap-2">
               <Route className="h-10 w-10 opacity-30" />
               <p>No trips found</p>
@@ -175,7 +182,7 @@ export function TripsPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filtered.map((t: any) => (
+                {trips.map((t: any) => (
                   <TableRow key={t.id}>
                     <TableCell>
                       <div className="font-medium">{t.source}</div>
@@ -208,6 +215,19 @@ export function TripsPage() {
               </TableBody>
             </Table>
           )}
+          <div className="flex items-center justify-between px-4 py-4 border-t">
+            <span className="text-sm text-muted-foreground">
+              Page {page} of {totalPages}
+            </span>
+            <div className="flex gap-2">
+              <Button variant="outline" size="sm" onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page === 1}>
+                Previous
+              </Button>
+              <Button variant="outline" size="sm" onClick={() => setPage((p) => Math.min(totalPages, p + 1))} disabled={page >= totalPages}>
+                Next
+              </Button>
+            </div>
+          </div>
         </CardContent>
       </Card>
 

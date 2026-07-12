@@ -52,6 +52,7 @@ export function VehiclesPage() {
   const navigate = useNavigate();
   const qc = useQueryClient();
   const { toast } = useToast();
+  const [page, setPage] = useState(1);
   const [search, setSearch] = useState('');
   const [filterStatus, setFilterStatus] = useState('ALL');
   const [filterType, setFilterType] = useState('ALL');
@@ -61,10 +62,13 @@ export function VehiclesPage() {
   const [formError, setFormError] = useState('');
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
 
-  const { data: vehicles = [], isLoading } = useQuery({
-    queryKey: ['vehicles'],
-    queryFn: vehiclesApi.list,
+  const { data: response, isLoading } = useQuery({
+    queryKey: ['vehicles', page, search, filterStatus, filterType],
+    queryFn: () => vehiclesApi.list({ page, limit: 10, search, status: filterStatus, type: filterType }),
   });
+  const vehicles = response?.data || [];
+  const total = response?.total || 0;
+  const totalPages = response?.totalPages || 1;
 
   const saveMutation = useMutation({
     mutationFn: (data: any) =>
@@ -94,14 +98,7 @@ export function VehiclesPage() {
     },
   });
 
-  const filtered = vehicles.filter((v: any) => {
-    const matchSearch =
-      v.registrationNumber.toLowerCase().includes(search.toLowerCase()) ||
-      v.name.toLowerCase().includes(search.toLowerCase());
-    const matchStatus = filterStatus === 'ALL' || v.status === filterStatus;
-    const matchType = filterType === 'ALL' || v.type === filterType;
-    return matchSearch && matchStatus && matchType;
-  });
+
 
   const openCreate = () => {
     setEditingId(null);
@@ -147,7 +144,7 @@ export function VehiclesPage() {
           <h1 className="text-2xl font-bold flex items-center gap-2">
             <Truck className="h-6 w-6 text-primary" /> Vehicle Registry
           </h1>
-          <p className="text-muted-foreground text-sm mt-1">{vehicles.length} vehicles in fleet</p>
+          <p className="text-muted-foreground text-sm mt-1">{total} vehicles in fleet</p>
         </div>
         <Button onClick={openCreate} className="gap-2">
           <Plus className="h-4 w-4" /> Add Vehicle
@@ -163,10 +160,10 @@ export function VehiclesPage() {
               placeholder="Search registration, name..."
               className="pl-9"
               value={search}
-              onChange={(e) => setSearch(e.target.value)}
+              onChange={(e) => { setSearch(e.target.value); setPage(1); }}
             />
           </div>
-          <Select value={filterStatus} onValueChange={setFilterStatus}>
+          <Select value={filterStatus} onValueChange={(v) => { setFilterStatus(v); setPage(1); }}>
             <SelectTrigger className="w-40">
               <SelectValue placeholder="All Statuses" />
             </SelectTrigger>
@@ -178,7 +175,7 @@ export function VehiclesPage() {
               <SelectItem value="RETIRED">Retired</SelectItem>
             </SelectContent>
           </Select>
-          <Select value={filterType} onValueChange={setFilterType}>
+          <Select value={filterType} onValueChange={(v) => { setFilterType(v); setPage(1); }}>
             <SelectTrigger className="w-36">
               <SelectValue placeholder="All Types" />
             </SelectTrigger>
@@ -199,7 +196,7 @@ export function VehiclesPage() {
             <div className="flex justify-center py-16">
               <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
             </div>
-          ) : filtered.length === 0 ? (
+          ) : vehicles.length === 0 ? (
             <div className="flex flex-col items-center py-16 text-muted-foreground gap-2">
               <Truck className="h-10 w-10 opacity-30" />
               <p>No vehicles found</p>
@@ -220,7 +217,7 @@ export function VehiclesPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filtered.map((v: any) => (
+                {vehicles.map((v: any) => (
                   <TableRow key={v.id}>
                     <TableCell className="font-mono font-semibold text-primary">{v.registrationNumber}</TableCell>
                     <TableCell>{v.name}</TableCell>
@@ -270,6 +267,19 @@ export function VehiclesPage() {
               </TableBody>
             </Table>
           )}
+          <div className="flex items-center justify-between px-4 py-4 border-t">
+            <span className="text-sm text-muted-foreground">
+              Page {page} of {totalPages}
+            </span>
+            <div className="flex gap-2">
+              <Button variant="outline" size="sm" onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page === 1}>
+                Previous
+              </Button>
+              <Button variant="outline" size="sm" onClick={() => setPage((p) => Math.min(totalPages, p + 1))} disabled={page >= totalPages}>
+                Next
+              </Button>
+            </div>
+          </div>
         </CardContent>
       </Card>
 

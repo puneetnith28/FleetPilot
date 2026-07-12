@@ -9,11 +9,35 @@ const prisma = new PrismaClient();
 router.use(requireAuth);
 
 // GET /api/drivers
-router.get('/', async (_req, res) => {
+router.get('/', async (req, res) => {
+  const page = parseInt(req.query.page as string) || 1;
+  const limit = parseInt(req.query.limit as string) || 50;
+  const search = req.query.search as string;
+  const status = req.query.status as any;
+
+  const where: any = {};
+  if (search) {
+    where.OR = [
+      { name: { contains: search, mode: 'insensitive' } },
+      { licenseNumber: { contains: search, mode: 'insensitive' } },
+    ];
+  }
+  if (status && status !== 'ALL') where.status = status;
+
+  const total = await prisma.driver.count({ where });
   const drivers = await prisma.driver.findMany({
+    where,
     orderBy: { createdAt: 'desc' },
+    skip: (page - 1) * limit,
+    take: limit,
   });
-  res.json(drivers);
+
+  res.json({
+    data: drivers,
+    total,
+    page,
+    totalPages: Math.ceil(total / limit),
+  });
 });
 
 // GET /api/drivers/:id
