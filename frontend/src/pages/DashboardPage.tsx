@@ -1,6 +1,8 @@
 import { useQuery } from '@tanstack/react-query';
 import { dashboardApi } from '@/lib/api';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Link } from 'react-router-dom';
 import {
   Truck, Users, Route, AlertCircle, CheckCircle2,
   Wrench, TrendingUp, Clock, Activity
@@ -8,6 +10,7 @@ import {
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts';
 import { formatDateTime } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
+import { EmptyState } from '@/components/ui/empty-state';
 
 function KpiCard({
   title, value, subtitle, icon: Icon, color, pulse,
@@ -82,9 +85,23 @@ export function DashboardPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold">Fleet Dashboard</h1>
-        <p className="text-muted-foreground text-sm mt-1">Real-time overview of your fleet operations</p>
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold">Fleet Dashboard</h1>
+          <p className="text-muted-foreground text-sm mt-1">Real-time overview of your fleet operations</p>
+        </div>
+        <div className="flex items-center gap-2">
+          <Link to="/trips">
+            <Button size="sm" className="gap-2">
+              <Route className="h-4 w-4" /> Dispatch Trip
+            </Button>
+          </Link>
+          <Link to="/maintenance">
+            <Button size="sm" variant="outline" className="gap-2">
+              <Wrench className="h-4 w-4" /> Log Maintenance
+            </Button>
+          </Link>
+        </div>
       </div>
 
       {/* KPI Cards — row 1 */}
@@ -215,7 +232,13 @@ export function DashboardPage() {
           </CardHeader>
           <CardContent className="space-y-3">
             {recentTrips.length === 0 && (
-              <p className="text-muted-foreground text-sm">No trips yet.</p>
+              <div className="py-8">
+                <EmptyState 
+                  icon={Route} 
+                  title="No trips found" 
+                  description="Your recent trips will appear here." 
+                />
+              </div>
             )}
             {recentTrips.map((trip: any) => (
               <div key={trip.id} className="flex items-start justify-between gap-2 py-2 border-b border-border/50 last:border-0">
