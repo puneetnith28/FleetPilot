@@ -2,6 +2,8 @@ import { Router } from 'express';
 import { PrismaClient } from '@prisma/client';
 import { requireAuth } from '../middleware/auth';
 import { MaintenanceSchema } from '../validators';
+import { broadcast } from '../utils/sse';
+import { createNotification } from '../utils/notifications';
 
 const router = Router();
 const prisma = new PrismaClient();
@@ -69,6 +71,13 @@ router.post('/', async (req, res) => {
     }),
   ]);
 
+  broadcast('invalidate', { keys: ['maintenance', 'vehicles', 'dashboard'] });
+  createNotification(
+    'Maintenance Logged',
+    `New maintenance log created for vehicle ${log.vehicle.registrationNumber}. Vehicle is IN_SHOP.`,
+    'WARNING'
+  );
+
   res.status(201).json(log);
 });
 
@@ -114,6 +123,8 @@ router.post('/:id/close', async (req, res) => {
     }),
   ]);
 
+  broadcast('invalidate', { keys: ['maintenance', 'vehicles', 'dashboard'] });
+
   res.json(updatedLog);
 });
 
@@ -129,6 +140,9 @@ router.put('/:id', async (req, res) => {
     data: { description, cost },
     include: { vehicle: true },
   });
+  
+  broadcast('invalidate', { keys: ['maintenance'] });
+  
   res.json(updated);
 });
 

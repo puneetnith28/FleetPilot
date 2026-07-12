@@ -3,6 +3,7 @@ import { PrismaClient } from '@prisma/client';
 import { requireAuth } from '../middleware/auth';
 import { CreateTripSchema, CompleteTripSchema } from '../validators';
 import { broadcast } from '../utils/sse';
+import { createNotification } from '../utils/notifications';
 
 const router = Router();
 const prisma = new PrismaClient();
@@ -294,6 +295,11 @@ router.post('/:id/complete', async (req, res) => {
   ]);
 
   broadcast('invalidate', { keys: ['trips', 'dashboard', 'vehicles', 'drivers'] });
+  createNotification(
+    'Trip Completed',
+    `Trip for vehicle ${trip.vehicle.registrationNumber} has been completed.`,
+    'SUCCESS'
+  );
 
   res.json(updatedTrip);
 });

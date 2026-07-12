@@ -44,6 +44,31 @@ export function useRealtimeUpdates() {
       }
     });
 
+    // Listen to notification events
+    eventSource.addEventListener('notification', (event: MessageEvent) => {
+      try {
+        const notification = JSON.parse(event.data);
+        console.log('[SSE] Received notification:', notification);
+        
+        // Invalidate notifications query to update the bell count
+        queryClient.invalidateQueries({ queryKey: ['notifications'] });
+        
+        // Show toast
+        let variant: 'default' | 'destructive' = 'default';
+        if (notification.type === 'CRITICAL' || notification.type === 'WARNING') {
+          variant = 'destructive';
+        }
+        
+        toast({
+          title: notification.title,
+          description: notification.message,
+          variant,
+        });
+      } catch (err) {
+        console.error('[SSE] Error parsing notification event:', err);
+      }
+    });
+
     eventSource.onerror = (error) => {
       console.error('[SSE] Connection error:', error);
       // EventSource automatically attempts to reconnect, so we don't need to manually recreate it
@@ -53,5 +78,5 @@ export function useRealtimeUpdates() {
       console.log('[SSE] Closing connection');
       eventSource.close();
     };
-  }, [queryClient]);
+  }, [queryClient, toast]);
 }

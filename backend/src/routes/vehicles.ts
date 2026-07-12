@@ -3,6 +3,7 @@ import { PrismaClient } from '@prisma/client';
 import { requireAuth } from '../middleware/auth';
 import { VehicleSchema, VehicleUpdateSchema } from '../validators';
 import { broadcast } from '../utils/sse';
+import { createNotification } from '../utils/notifications';
 
 const router = Router();
 const prisma = new PrismaClient();
@@ -124,6 +125,14 @@ router.put('/:id', async (req, res) => {
   });
   
   broadcast('invalidate', { keys: ['vehicles', 'dashboard'] });
+  
+  if (existing.status !== 'IN_SHOP' && vehicle.status === 'IN_SHOP') {
+    createNotification(
+      'Vehicle Breakdown',
+      `Vehicle ${vehicle.registrationNumber} is now in the shop for repairs.`,
+      'WARNING'
+    );
+  }
   
   res.json(vehicle);
 });

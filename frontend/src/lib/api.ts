@@ -103,4 +103,11 @@ export const reportsApi = {
   get: () => api.get('/reports').then((r) => r.data),
 };
 
+// ─── Notifications ────────────────────────────────────────────
+export const notificationsApi = {
+  list: () => api.get('/notifications').then((r) => r.data),
+  read: (id: string) => api.patch(`/notifications/${id}/read`).then((r) => r.data),
+  readAll: () => api.patch('/notifications/read-all').then((r) => r.data),
+};
+
 export default api;
