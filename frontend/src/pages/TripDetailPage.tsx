@@ -195,14 +195,14 @@ export function TripDetailPage() {
             <div className="absolute left-0 top-1/2 w-full h-1 bg-border -translate-y-1/2 z-0"></div>
             
             <div className="relative z-10 flex flex-col items-center gap-2 bg-card px-2">
-              <div className={`h-8 w-8 rounded-full flex items-center justify-center border-2 ${trip.status === 'CANCELLED' ? 'border-red-500 bg-red-500/20 text-red-500' : 'border-primary bg-primary text-primary-foreground'}`}>
+              <div className={`h-8 w-8 rounded-full flex items-center justify-center border-2 ${trip.status === 'CANCELLED' ? 'border-red-500 bg-red-500/20 text-red-500' : 'border-primary bg-primary text-primary-foreground'} ${trip.status === 'DRAFT' ? 'animate-pulse shadow-[0_0_15px_hsl(var(--primary))]' : ''}`}>
                 1
               </div>
               <span className="text-sm font-medium">Drafted</span>
             </div>
 
             <div className="relative z-10 flex flex-col items-center gap-2 bg-card px-2">
-              <div className={`h-8 w-8 rounded-full flex items-center justify-center border-2 ${trip.status === 'CANCELLED' ? 'border-border bg-background text-muted-foreground' : (trip.status === 'DISPATCHED' || trip.status === 'COMPLETED') ? 'border-primary bg-primary text-primary-foreground' : 'border-border bg-background text-muted-foreground'}`}>
+              <div className={`h-8 w-8 rounded-full flex items-center justify-center border-2 ${trip.status === 'CANCELLED' ? 'border-border bg-background text-muted-foreground' : (trip.status === 'DISPATCHED' || trip.status === 'COMPLETED') ? 'border-primary bg-primary text-primary-foreground' : 'border-border bg-background text-muted-foreground'} ${trip.status === 'DISPATCHED' ? 'animate-pulse shadow-[0_0_15px_hsl(var(--primary))]' : ''}`}>
                 2
               </div>
               <span className="text-sm font-medium">Dispatched</span>
