@@ -31,10 +31,20 @@ router.get('/', async (req, res) => {
     orderBy: { createdAt: 'desc' },
     skip: (page - 1) * limit,
     take: limit,
+    include: {
+      trips: { select: { status: true } }
+    }
+  });
+
+  const driversWithCompletion = drivers.map(d => {
+    const totalTrips = d.trips.length;
+    const completedTrips = d.trips.filter(t => t.status === 'COMPLETED').length;
+    const completionRate = totalTrips === 0 ? 0 : Math.round((completedTrips / totalTrips) * 100);
+    return { ...d, tripCompletionRate: completionRate, trips: undefined };
   });
 
   res.json({
-    data: drivers,
+    data: driversWithCompletion,
     total,
     page,
     totalPages: Math.ceil(total / limit),

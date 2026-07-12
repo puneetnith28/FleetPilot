@@ -18,6 +18,8 @@ export function LoginPage() {
   const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [role, setRole] = useState('Dispatcher');
+  const [remember, setRemember] = useState(false);
   const [showPw, setShowPw] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -103,9 +105,14 @@ export function LoginPage() {
           </div>
 
           {error && (
-            <div className="flex items-center gap-2 rounded-lg border border-red-800 bg-red-950/50 px-4 py-3 text-sm text-red-400 mb-6">
-              <AlertCircle className="h-4 w-4 flex-shrink-0" />
-              {error}
+            <div className={`flex items-start gap-3 rounded-xl border ${error.includes('locked') ? 'border-dashed border-red-500 bg-red-950/20 text-red-400' : 'border-red-800 bg-red-950/50 text-red-400'} px-5 py-4 text-sm mb-6`}>
+              <div className="mt-0.5">
+                <AlertCircle className="h-4 w-4 flex-shrink-0" />
+              </div>
+              <div>
+                <p className="font-semibold text-xs uppercase tracking-wider mb-1">Error state</p>
+                <p>{error}</p>
+              </div>
             </div>
           )}
 
@@ -143,6 +150,37 @@ export function LoginPage() {
                   {showPw ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                 </button>
               </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="role">ROLE (RBAC)</Label>
+              <select 
+                id="role"
+                value={role}
+                onChange={(e) => setRole(e.target.value)}
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                <option value="Fleet Manager">Fleet Manager</option>
+                <option value="Dispatcher">Dispatcher</option>
+                <option value="Safety Officer">Safety Officer</option>
+                <option value="Financial Analyst">Financial Analyst</option>
+              </select>
+            </div>
+
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <input 
+                  type="checkbox" 
+                  id="remember" 
+                  className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary accent-primary bg-background"
+                  checked={remember}
+                  onChange={(e) => setRemember(e.target.checked)}
+                />
+                <Label htmlFor="remember" className="text-sm cursor-pointer">Remember me</Label>
+              </div>
+              <a href="#" className="text-sm text-primary hover:underline font-medium">
+                Forgot password?
+              </a>
             </div>
 
             <Button type="submit" className="w-full" disabled={loading}>
