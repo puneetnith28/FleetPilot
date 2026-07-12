@@ -8,8 +8,8 @@ export function useRealtimeUpdates() {
 
   useEffect(() => {
     // Determine API URL based on Vite config (same as api.ts)
-    const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
-    const eventSourceUrl = `${API_URL}/events`;
+    const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+    const eventSourceUrl = `${API_BASE}/api/events`;
 
     const eventSource = new EventSource(eventSourceUrl, {
       withCredentials: true, // Send cookies/cors headers if auth requires it
