@@ -6,3 +6,15 @@ dist/
 *.log
 postgres_data/
 .prisma/
+
+# IDE
+.vscode/
+.idea/
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Docs
+DEVELOPMENT_PLAN.md

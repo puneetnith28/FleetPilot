@@ -40,7 +40,7 @@ export const authApi = {
 
 // ─── Vehicles ─────────────────────────────────────────────────
 export const vehiclesApi = {
-  list: () => api.get('/vehicles').then((r) => r.data),
+  list: (params?: any) => api.get('/vehicles', { params }).then((r) => r.data),
   get: (id: string) => api.get(`/vehicles/${id}`).then((r) => r.data),
   create: (data: unknown) => api.post('/vehicles', data).then((r) => r.data),
   update: (id: string, data: unknown) => api.put(`/vehicles/${id}`, data).then((r) => r.data),
@@ -49,7 +49,7 @@ export const vehiclesApi = {
 
 // ─── Drivers ──────────────────────────────────────────────────
 export const driversApi = {
-  list: () => api.get('/drivers').then((r) => r.data),
+  list: (params?: any) => api.get('/drivers', { params }).then((r) => r.data),
   get: (id: string) => api.get(`/drivers/${id}`).then((r) => r.data),
   create: (data: unknown) => api.post('/drivers', data).then((r) => r.data),
   update: (id: string, data: unknown) => api.put(`/drivers/${id}`, data).then((r) => r.data),
@@ -58,7 +58,7 @@ export const driversApi = {
 
 // ─── Trips ────────────────────────────────────────────────────
 export const tripsApi = {
-  list: () => api.get('/trips').then((r) => r.data),
+  list: (params?: any) => api.get('/trips', { params }).then((r) => r.data),
   get: (id: string) => api.get(`/trips/${id}`).then((r) => r.data),
   create: (data: unknown) => api.post('/trips', data).then((r) => r.data),
   update: (id: string, data: unknown) => api.put(`/trips/${id}`, data).then((r) => r.data),

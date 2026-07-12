@@ -47,6 +47,7 @@ const emptyForm: DriverForm = {
 export function DriversPage() {
   const qc = useQueryClient();
   const { toast } = useToast();
+  const [page, setPage] = useState(1);
   const [search, setSearch] = useState('');
   const [filterStatus, setFilterStatus] = useState('ALL');
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -55,10 +56,13 @@ export function DriversPage() {
   const [formError, setFormError] = useState('');
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
 
-  const { data: drivers = [], isLoading } = useQuery({
-    queryKey: ['drivers'],
-    queryFn: driversApi.list,
+  const { data: response, isLoading } = useQuery({
+    queryKey: ['drivers', page, search, filterStatus],
+    queryFn: () => driversApi.list({ page, limit: 10, search, status: filterStatus }),
   });
+  const drivers = response?.data || [];
+  const total = response?.total || 0;
+  const totalPages = response?.totalPages || 1;
 
   const saveMutation = useMutation({
     mutationFn: (data: any) =>
@@ -87,13 +91,7 @@ export function DriversPage() {
     },
   });
 
-  const filtered = drivers.filter((d: any) => {
-    const matchSearch =
-      d.name.toLowerCase().includes(search.toLowerCase()) ||
-      d.licenseNumber.toLowerCase().includes(search.toLowerCase());
-    const matchStatus = filterStatus === 'ALL' || d.status === filterStatus;
-    return matchSearch && matchStatus;
-  });
+
 
   const openCreate = () => {
     setEditingId(null);
@@ -134,7 +132,7 @@ export function DriversPage() {
             <Users className="h-6 w-6 text-primary" /> Driver Management
           </h1>
           <p className="text-muted-foreground text-sm mt-1">
-            {drivers.length} drivers registered ·{' '}
+            {total} drivers registered ·{' '}
             <span className="text-red-400">
               {drivers.filter((d: any) => isLicenseExpired(d.licenseExpiryDate)).length} expired licenses
             </span>
@@ -154,10 +152,10 @@ export function DriversPage() {
               placeholder="Search name, license number..."
               className="pl-9"
               value={search}
-              onChange={(e) => setSearch(e.target.value)}
+              onChange={(e) => { setSearch(e.target.value); setPage(1); }}
             />
           </div>
-          <Select value={filterStatus} onValueChange={setFilterStatus}>
+          <Select value={filterStatus} onValueChange={(v) => { setFilterStatus(v); setPage(1); }}>
             <SelectTrigger className="w-40">
               <SelectValue placeholder="All Statuses" />
             </SelectTrigger>
@@ -179,7 +177,7 @@ export function DriversPage() {
             <div className="flex justify-center py-16">
               <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
             </div>
-          ) : filtered.length === 0 ? (
+          ) : drivers.length === 0 ? (
             <div className="flex flex-col items-center py-16 text-muted-foreground gap-2">
               <Users className="h-10 w-10 opacity-30" />
               <p>No drivers found</p>
@@ -199,7 +197,7 @@ export function DriversPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filtered.map((d: any) => {
+                {drivers.map((d: any) => {
                   const expired = isLicenseExpired(d.licenseExpiryDate);
                   const expiringSoon = isLicenseExpiringSoon(d.licenseExpiryDate);
                   return (
@@ -268,6 +266,19 @@ export function DriversPage() {
               </TableBody>
             </Table>
           )}
+          <div className="flex items-center justify-between px-4 py-4 border-t">
+            <span className="text-sm text-muted-foreground">
+              Page {page} of {totalPages}
+            </span>
+            <div className="flex gap-2">
+              <Button variant="outline" size="sm" onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page === 1}>
+                Previous
+              </Button>
+              <Button variant="outline" size="sm" onClick={() => setPage((p) => Math.min(totalPages, p + 1))} disabled={page >= totalPages}>
+                Next
+              </Button>
+            </div>
+          </div>
         </CardContent>
       </Card>
 
