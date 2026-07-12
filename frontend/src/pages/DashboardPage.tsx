@@ -105,7 +105,7 @@ export function DashboardPage() {
       </div>
 
       {/* KPI Cards — row 1 */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <KpiCard
           title="Fleet Utilization"
           value={`${kpis.fleetUtilization}%`}
@@ -139,7 +139,7 @@ export function DashboardPage() {
       </div>
 
       {/* KPI Cards — row 2 */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <KpiCard
           title="On Trip"
           value={kpis.activeVehicles}

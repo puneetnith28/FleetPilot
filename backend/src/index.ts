@@ -13,6 +13,7 @@ import dashboardRouter from './routes/dashboard';
 import reportsRouter from './routes/reports';
 import eventsRouter from './routes/events';
 import notificationsRouter from './routes/notifications';
+import driverPortalRouter from './routes/driver-portal';
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -38,6 +39,7 @@ app.use('/api/dashboard', dashboardRouter);
 app.use('/api/reports', reportsRouter);
 app.use('/api/events', eventsRouter);
 app.use('/api/notifications', notificationsRouter);
+app.use('/api/driver-portal', driverPortalRouter);
 
 // ─── Health check ─────────────────────────────────────────────
 app.get('/health', (_req, res) => {

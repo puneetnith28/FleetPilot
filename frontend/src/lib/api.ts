@@ -107,4 +107,10 @@ export const notificationsApi = {
   readAll: () => api.patch('/notifications/read-all').then((r) => r.data),
 };
 
+// ─── Driver Portal ────────────────────────────────────────────
+export const driverPortalApi = {
+  me: () => api.get('/driver-portal/me').then((r) => r.data),
+  activeTrip: () => api.get('/driver-portal/active-trip').then((r) => r.data),
+};
+
 export default api;

@@ -72,6 +72,8 @@ model User {
   passwordHash String
   role         Role
   createdAt    DateTime @default(now())
+  
+  driver       Driver?
 }
 
 model Vehicle {
@@ -102,6 +104,9 @@ model Driver {
   safetyScore       Float        @default(100)
   status            DriverStatus @default(AVAILABLE)
   createdAt         DateTime     @default(now())
+  
+  userId            String?      @unique
+  user              User?        @relation(fields: [userId], references: [id])
 
   trips Trip[]
 }
