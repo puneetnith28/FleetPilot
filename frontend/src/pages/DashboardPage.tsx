@@ -1,8 +1,10 @@
+import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { dashboardApi } from '@/lib/api';
+import { dashboardApi, vehiclesApi } from '@/lib/api';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import {
   Truck, Users, Route, AlertCircle, CheckCircle2,
   Wrench, TrendingUp, Clock, Activity
@@ -12,8 +14,6 @@ import { formatDateTime } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { EmptyState } from '@/components/ui/empty-state';
 import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { useState } from 'react';
 
 function KpiCard({
   title, value, subtitle, icon: Icon, color, pulse,
@@ -53,13 +53,20 @@ const STATUS_BADGE_MAP: Record<string, any> = {
 const PIE_COLORS = ['#22c55e', '#3b82f6', '#f59e0b', '#6b7280'];
 
 export function DashboardPage() {
-  const [filterType, setFilterType] = useState('All');
-  const [filterStatus, setFilterStatus] = useState('All');
-  const [filterRegion, setFilterRegion] = useState('All');
+  const [filterType, setFilterType] = useState('ALL');
+  const [filterStatus, setFilterStatus] = useState('ALL');
+  const [filterRegion, setFilterRegion] = useState('ALL');
+
+  const { data: metadata } = useQuery({
+    queryKey: ['vehicles', 'metadata'],
+    queryFn: vehiclesApi.metadata,
+  });
+  const vehicleTypes = metadata?.types || ['VAN', 'TRUCK', 'BUS', 'CAR', 'TRAILER', 'OTHER'];
+  const regions = metadata?.regions || ['North', 'South', 'East', 'West', 'Central'];
 
   const { data, isLoading, error } = useQuery({
     queryKey: ['dashboard', filterType, filterStatus, filterRegion],
-    queryFn: () => dashboardApi.get({ type: filterType, status: filterStatus, region: filterRegion }),
+    queryFn: () => dashboardApi.get({ type: filterType, status: filterStatus, region: filterRegion, limit: 5 }),
     refetchInterval: 30_000,
   });
 
@@ -91,38 +98,6 @@ export function DashboardPage() {
 
   return (
     <div className="space-y-6">
-      {/* Top Filters (Mockup specific) */}
-      <div className="flex items-center gap-4 bg-card p-4 rounded-lg border border-border">
-        <span className="text-xs font-semibold text-muted-foreground tracking-wider uppercase">Filters</span>
-        <Select value={filterType} onValueChange={setFilterType}>
-          <SelectTrigger className="w-32"><SelectValue placeholder="Vehicle Type" /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="All">Vehicle Type: All</SelectItem>
-            <SelectItem value="VAN">Van</SelectItem>
-            <SelectItem value="TRUCK">Truck</SelectItem>
-            <SelectItem value="MINI">Mini</SelectItem>
-          </SelectContent>
-        </Select>
-        <Select value={filterStatus} onValueChange={setFilterStatus}>
-          <SelectTrigger className="w-32"><SelectValue placeholder="Status" /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="All">Status: All</SelectItem>
-            <SelectItem value="AVAILABLE">Available</SelectItem>
-            <SelectItem value="ON_TRIP">On Trip</SelectItem>
-            <SelectItem value="IN_SHOP">In Shop</SelectItem>
-            <SelectItem value="RETIRED">Retired</SelectItem>
-          </SelectContent>
-        </Select>
-        <Select value={filterRegion} onValueChange={setFilterRegion}>
-          <SelectTrigger className="w-32"><SelectValue placeholder="Region" /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="All">Region: All</SelectItem>
-            <SelectItem value="North">North</SelectItem>
-            <SelectItem value="South">South</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
-
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
@@ -142,6 +117,50 @@ export function DashboardPage() {
           </Link>
         </div>
       </div>
+
+      {/* Filters */}
+      <Card>
+        <CardContent className="p-4 flex flex-wrap gap-4 items-center">
+          <span className="text-sm font-medium text-muted-foreground mr-2">Filter Metrics:</span>
+          
+          <Select value={filterType} onValueChange={setFilterType}>
+            <SelectTrigger className="w-36">
+              <SelectValue placeholder="All Types" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="ALL">All Types</SelectItem>
+              {vehicleTypes.map((t: string) => (
+                <SelectItem key={t} value={t}>{t}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          <Select value={filterStatus} onValueChange={setFilterStatus}>
+            <SelectTrigger className="w-40">
+              <SelectValue placeholder="All Statuses" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="ALL">All Statuses</SelectItem>
+              <SelectItem value="AVAILABLE">Available</SelectItem>
+              <SelectItem value="ON_TRIP">On Trip</SelectItem>
+              <SelectItem value="IN_SHOP">In Shop</SelectItem>
+              <SelectItem value="RETIRED">Retired</SelectItem>
+            </SelectContent>
+          </Select>
+
+          <Select value={filterRegion} onValueChange={setFilterRegion}>
+            <SelectTrigger className="w-36">
+              <SelectValue placeholder="All Regions" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="ALL">All Regions</SelectItem>
+              {regions.map((r: string) => (
+                <SelectItem key={r} value={r}>{r}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </CardContent>
+      </Card>
 
       {/* KPI Cards — row 1 */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
