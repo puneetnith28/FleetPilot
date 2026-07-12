@@ -20,13 +20,17 @@ export function MaintenancePage() {
   const { toast } = useToast();
   const [dialogOpen, setDialogOpen] = useState(false);
 
+  const [page, setPage] = useState(1);
   const [form, setForm] = useState({ vehicleId: '', description: '', cost: '' });
   const [filterVehicle, setFilterVehicle] = useState('ALL');
 
-  const { data: logs = [], isLoading } = useQuery({
-    queryKey: ['maintenance'],
-    queryFn: () => maintenanceApi.list(),
+  const { data: logsResponse, isLoading } = useQuery({
+    queryKey: ['maintenance', page, filterVehicle],
+    queryFn: () => maintenanceApi.list({ page, limit: 10, vehicleId: filterVehicle !== 'ALL' ? filterVehicle : undefined }),
   });
+  const logs = logsResponse?.data || [];
+  const total = logsResponse?.total || 0;
+  const totalPages = logsResponse?.totalPages || 1;
 
   const { data: vehicles = [] } = useQuery({
     queryKey: ['vehicles'],
@@ -73,9 +77,7 @@ export function MaintenancePage() {
 
   const eligibleVehicles = vehicles.filter((v: any) => v.status !== 'ON_TRIP' && v.status !== 'RETIRED');
 
-  const filtered = filterVehicle === 'ALL'
-    ? logs
-    : logs.filter((l: any) => l.vehicleId === filterVehicle);
+  const filtered = logs;
 
   const openLogs = logs.filter((l: any) => l.status === 'OPEN').length;
   const totalCost = logs.reduce((s: number, l: any) => s + l.cost, 0);
@@ -88,7 +90,7 @@ export function MaintenancePage() {
             <Wrench className="h-6 w-6 text-primary" /> Maintenance Logs
           </h1>
           <p className="text-muted-foreground text-sm mt-1">
-            {openLogs} open · Total cost: {formatCurrency(totalCost)}
+            {total} entries · Page {page} of {totalPages}
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -151,7 +153,7 @@ export function MaintenancePage() {
 
       {/* Filter */}
       <div className="flex gap-3">
-        <Select value={filterVehicle} onValueChange={setFilterVehicle}>
+        <Select value={filterVehicle} onValueChange={(v) => { setFilterVehicle(v); setPage(1); }}>
           <SelectTrigger className="w-56">
             <SelectValue placeholder="All Vehicles" />
           </SelectTrigger>
@@ -232,6 +234,22 @@ export function MaintenancePage() {
                 ))}
               </TableBody>
             </Table>
+          )}
+
+          {!isLoading && logs.length > 0 && (
+            <div className="p-4 border-t border-border flex items-center justify-between text-sm">
+              <span className="text-muted-foreground">
+                Page {page} of {totalPages}
+              </span>
+              <div className="flex gap-2">
+                <Button variant="outline" size="sm" onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page === 1}>
+                  Previous
+                </Button>
+                <Button variant="outline" size="sm" onClick={() => setPage((p) => Math.min(totalPages, p + 1))} disabled={page >= totalPages}>
+                  Next
+                </Button>
+              </div>
+            </div>
           )}
         </CardContent>
       </Card>

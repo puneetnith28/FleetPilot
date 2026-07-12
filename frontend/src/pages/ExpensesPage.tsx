@@ -26,11 +26,18 @@ export function ExpensesPage() {
   const { toast } = useToast();
   const [dialogOpen, setDialogOpen] = useState(false);
 
+  const [page, setPage] = useState(1);
   const [form, setForm] = useState({ vehicleId: '', type: 'MISC', amount: '', date: new Date().toISOString().split('T')[0], description: '' });
   const [filterVehicle, setFilterVehicle] = useState('ALL');
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
 
-  const { data: expenses = [], isLoading } = useQuery({ queryKey: ['expenses'], queryFn: () => expensesApi.list() });
+  const { data: expensesResponse, isLoading } = useQuery({ 
+    queryKey: ['expenses', page, filterVehicle], 
+    queryFn: () => expensesApi.list({ page, limit: 10, vehicleId: filterVehicle !== 'ALL' ? filterVehicle : undefined }) 
+  });
+  const expenses = expensesResponse?.data || [];
+  const total = expensesResponse?.total || 0;
+  const totalPages = expensesResponse?.totalPages || 1;
   const { data: vehicles = [] } = useQuery({ queryKey: ['vehicles'], queryFn: vehiclesApi.list });
 
   const createMutation = useMutation({
@@ -66,7 +73,7 @@ export function ExpensesPage() {
     createMutation.mutate({ ...form, amount });
   };
 
-  const filtered = filterVehicle === 'ALL' ? expenses : expenses.filter((e: any) => e.vehicleId === filterVehicle);
+  const filtered = expenses;
   const totalAmount = filtered.reduce((s: number, e: any) => s + e.amount, 0);
 
   return (
@@ -77,7 +84,7 @@ export function ExpensesPage() {
             <Receipt className="h-6 w-6 text-primary" /> Expenses
           </h1>
           <p className="text-muted-foreground text-sm mt-1">
-            {expenses.length} entries · Total: {formatCurrency(totalAmount)}
+            {total} entries · Page {page} of {totalPages}
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -115,7 +122,7 @@ export function ExpensesPage() {
       </div>
 
       <div className="flex gap-3">
-        <Select value={filterVehicle} onValueChange={setFilterVehicle}>
+          <Select value={filterVehicle} onValueChange={(v) => { setFilterVehicle(v); setPage(1); }}>
           <SelectTrigger className="w-56">
             <SelectValue placeholder="All Vehicles" />
           </SelectTrigger>
@@ -172,6 +179,22 @@ export function ExpensesPage() {
                 ))}
               </TableBody>
             </Table>
+          )}
+          
+          {!isLoading && expenses.length > 0 && (
+            <div className="p-4 border-t border-border flex items-center justify-between text-sm">
+              <span className="text-muted-foreground">
+                Page {page} of {totalPages}
+              </span>
+              <div className="flex gap-2">
+                <Button variant="outline" size="sm" onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page === 1}>
+                  Previous
+                </Button>
+                <Button variant="outline" size="sm" onClick={() => setPage((p) => Math.min(totalPages, p + 1))} disabled={page >= totalPages}>
+                  Next
+                </Button>
+              </div>
+            </div>
           )}
         </CardContent>
       </Card>

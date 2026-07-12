@@ -19,11 +19,18 @@ export function FuelPage() {
   const { toast } = useToast();
   const [dialogOpen, setDialogOpen] = useState(false);
 
+  const [page, setPage] = useState(1);
   const [form, setForm] = useState({ vehicleId: '', liters: '', cost: '', date: new Date().toISOString().split('T')[0] });
   const [filterVehicle, setFilterVehicle] = useState('ALL');
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
 
-  const { data: logs = [], isLoading } = useQuery({ queryKey: ['fuel'], queryFn: () => fuelApi.list() });
+  const { data: logsResponse, isLoading } = useQuery({ 
+    queryKey: ['fuel', page, filterVehicle], 
+    queryFn: () => fuelApi.list({ page, limit: 10, vehicleId: filterVehicle !== 'ALL' ? filterVehicle : undefined }) 
+  });
+  const logs = logsResponse?.data || [];
+  const total = logsResponse?.total || 0;
+  const totalPages = logsResponse?.totalPages || 1;
   const { data: vehicles = [] } = useQuery({ queryKey: ['vehicles'], queryFn: vehiclesApi.list });
 
   const createMutation = useMutation({
@@ -64,8 +71,7 @@ export function FuelPage() {
     createMutation.mutate({ ...form, liters, cost });
   };
 
-  const filtered = filterVehicle === 'ALL' ? logs : logs.filter((l: any) => l.vehicleId === filterVehicle);
-
+  const filtered = logs;
   const totalLiters = filtered.reduce((s: number, l: any) => s + l.liters, 0);
   const totalCost = filtered.reduce((s: number, l: any) => s + l.cost, 0);
 
@@ -77,7 +83,7 @@ export function FuelPage() {
             <Fuel className="h-6 w-6 text-primary" /> Fuel Logs
           </h1>
           <p className="text-muted-foreground text-sm mt-1">
-            {logs.length} entries · {Math.round(totalLiters * 10) / 10} L total · {formatCurrency(totalCost)} spent
+            {total} entries · Page {page} of {totalPages}
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -113,7 +119,7 @@ export function FuelPage() {
       </div>
 
       <div className="flex gap-3">
-        <Select value={filterVehicle} onValueChange={setFilterVehicle}>
+          <Select value={filterVehicle} onValueChange={(v) => { setFilterVehicle(v); setPage(1); }}>
           <SelectTrigger className="w-56">
             <SelectValue placeholder="All Vehicles" />
           </SelectTrigger>
@@ -175,6 +181,22 @@ export function FuelPage() {
                 ))}
               </TableBody>
             </Table>
+          )}
+
+          {!isLoading && logs.length > 0 && (
+            <div className="p-4 border-t border-border flex items-center justify-between text-sm">
+              <span className="text-muted-foreground">
+                Page {page} of {totalPages}
+              </span>
+              <div className="flex gap-2">
+                <Button variant="outline" size="sm" onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page === 1}>
+                  Previous
+                </Button>
+                <Button variant="outline" size="sm" onClick={() => setPage((p) => Math.min(totalPages, p + 1))} disabled={page >= totalPages}>
+                  Next
+                </Button>
+              </div>
+            </div>
           )}
         </CardContent>
       </Card>
