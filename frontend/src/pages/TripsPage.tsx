@@ -5,6 +5,9 @@ import { tripsApi, vehiclesApi, driversApi } from '@/lib/api';
 import { Plus, Search, Loader2, AlertCircle, MapPin, Navigation, SendHorizonal, Eye, Route, X, Download, FileText } from 'lucide-react';
 import { EmptyState } from '@/components/ui/empty-state';
 import { exportCSV, exportPDF } from '@/lib/exportUtils';
+import { geocode, calculateRoute, RoutingResult } from '@/lib/routing';
+import { MapContainer, TileLayer, Polyline, Marker } from 'react-leaflet';
+import L from 'leaflet';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -55,6 +58,8 @@ export function TripsPage() {
   const [dateEnd, setDateEnd] = useState('');
   const [dialogOpen, setDialogOpen] = useState(false);
   const [form, setForm] = useState<TripForm>(emptyForm);
+  const [routingResult, setRoutingResult] = useState<RoutingResult | null>(null);
+  const [isCalculatingRoute, setIsCalculatingRoute] = useState(false);
 
   const { data: tripsResponse, isLoading } = useQuery({
     queryKey: ['trips', page, search, filterStatus, dateStart, dateEnd],
@@ -98,7 +103,39 @@ export function TripsPage() {
     },
   });
 
-
+  const handleCalculateRoute = async () => {
+    if (!form.source || !form.destination) {
+      toast({ title: 'Missing locations', description: 'Please enter both source and destination.', variant: 'destructive' });
+      return;
+    }
+    
+    setIsCalculatingRoute(true);
+    setRoutingResult(null);
+    
+    try {
+      const start = await geocode(form.source);
+      const end = await geocode(form.destination);
+      
+      if (!start || !end) {
+        toast({ title: 'Geocoding failed', description: 'Could not find one or both locations.', variant: 'destructive' });
+        setIsCalculatingRoute(false);
+        return;
+      }
+      
+      const result = await calculateRoute(start, end);
+      if (result) {
+        setRoutingResult(result);
+        setForm({ ...form, plannedDistance: Math.round(result.distanceKm).toString() });
+        toast({ title: 'Route calculated!', description: `Distance: ${Math.round(result.distanceKm)} km.`, variant: 'success' });
+      } else {
+        toast({ title: 'Routing failed', description: 'Could not calculate route between these locations.', variant: 'destructive' });
+      }
+    } catch (e) {
+      toast({ title: 'Routing error', description: 'An unexpected error occurred.', variant: 'destructive' });
+    }
+    
+    setIsCalculatingRoute(false);
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -289,16 +326,37 @@ export function TripsPage() {
             <DialogTitle>Create New Trip</DialogTitle>
           </DialogHeader>
           <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-1.5">
                 <Label>Source / Origin *</Label>
                 <Input value={form.source} onChange={(e) => setForm({ ...form, source: e.target.value })} placeholder="London" required />
               </div>
               <div className="space-y-1.5">
                 <Label>Destination *</Label>
-                <Input value={form.destination} onChange={(e) => setForm({ ...form, destination: e.target.value })} placeholder="Manchester" required />
+                <div className="flex gap-2">
+                  <Input value={form.destination} onChange={(e) => setForm({ ...form, destination: e.target.value })} placeholder="Manchester" required className="flex-1" />
+                  <Button type="button" onClick={handleCalculateRoute} disabled={isCalculatingRoute || !form.source || !form.destination}>
+                    {isCalculatingRoute ? <Loader2 className="h-4 w-4 animate-spin" /> : <Navigation className="h-4 w-4" />}
+                  </Button>
+                </div>
               </div>
             </div>
+
+            {routingResult && (
+              <div className="border border-border rounded-lg overflow-hidden h-48 relative z-0">
+                <MapContainer center={routingResult.geometry[0]} zoom={6} scrollWheelZoom={false} className="h-full w-full">
+                  <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+                  <Polyline positions={routingResult.geometry} color="hsl(var(--primary))" weight={4} />
+                  <Marker position={routingResult.geometry[0]} />
+                  <Marker position={routingResult.geometry[routingResult.geometry.length - 1]} />
+                </MapContainer>
+                {selectedVehicle && (
+                  <div className="absolute bottom-2 right-2 bg-background/90 backdrop-blur border border-border px-3 py-1.5 rounded-md text-xs font-semibold z-[400] shadow-md">
+                    Est. Fuel: {((routingResult.distanceKm / 100) * (selectedVehicle.maxLoadCapacity / 1000) * 8).toFixed(1)} L
+                  </div>
+                )}
+              </div>
+            )}
 
             <div className="space-y-1.5">
               <Label>Vehicle * <span className="text-muted-foreground text-xs">(Available only)</span></Label>

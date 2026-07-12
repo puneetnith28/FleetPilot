@@ -4,8 +4,11 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { tripsApi } from '@/lib/api';
 import {
   ArrowLeft, Loader2, AlertCircle, CheckCircle2,
-  Truck, Users, MapPin, Package, Gauge, Fuel, Calendar, XCircle, SendHorizonal
+  Truck, Users, MapPin, Package, Gauge, Fuel, Calendar, XCircle, SendHorizonal, Map as MapIcon
 } from 'lucide-react';
+import { geocode, calculateRoute, RoutingResult } from '@/lib/routing';
+import { MapContainer, TileLayer, Polyline, Marker } from 'react-leaflet';
+import L from 'leaflet';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -55,6 +58,17 @@ export function TripDetailPage() {
     queryKey: ['trip', id],
     queryFn: () => tripsApi.get(id!),
     enabled: !!id,
+  });
+
+  const { data: route } = useQuery({
+    queryKey: ['route', trip?.source, trip?.destination],
+    queryFn: async () => {
+      const start = await geocode(trip.source);
+      const end = await geocode(trip.destination);
+      if (start && end) return calculateRoute(start, end);
+      return null;
+    },
+    enabled: !!trip?.source && !!trip?.destination,
   });
 
   const dispatchMutation = useMutation({
@@ -276,6 +290,23 @@ export function TripDetailPage() {
                   </div>
                 </div>
               )}
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Route Map */}
+        {route && (
+          <Card className="lg:col-span-2">
+            <CardHeader><CardTitle className="text-base flex items-center gap-2"><MapIcon className="h-4 w-4" /> Route Map</CardTitle></CardHeader>
+            <CardContent>
+              <div className="border border-border rounded-lg overflow-hidden h-64 md:h-80 relative z-0">
+                <MapContainer center={route.geometry[0]} zoom={6} scrollWheelZoom={false} className="h-full w-full">
+                  <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+                  <Polyline positions={route.geometry} color="hsl(var(--primary))" weight={4} />
+                  <Marker position={route.geometry[0]} />
+                  <Marker position={route.geometry[route.geometry.length - 1]} />
+                </MapContainer>
+              </div>
             </CardContent>
           </Card>
         )}
