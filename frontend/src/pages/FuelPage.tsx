@@ -17,7 +17,7 @@ export function FuelPage() {
   const qc = useQueryClient();
   const { toast } = useToast();
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [formError, setFormError] = useState('');
+
   const [form, setForm] = useState({ vehicleId: '', liters: '', cost: '', date: new Date().toISOString().split('T')[0] });
   const [filterVehicle, setFilterVehicle] = useState('ALL');
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
@@ -32,7 +32,11 @@ export function FuelPage() {
       setDialogOpen(false);
       toast({ title: 'Fuel log added', variant: 'success' });
     },
-    onError: (err: any) => setFormError(err?.response?.data?.error || 'Failed to add fuel log'),
+    onError: (err: any) => toast({
+      title: 'Failed to add fuel log',
+      description: err?.response?.data?.error || 'An unexpected error occurred.',
+      variant: 'destructive',
+    }),
   });
 
   const deleteMutation = useMutation({
@@ -46,8 +50,17 @@ export function FuelPage() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    setFormError('');
-    createMutation.mutate({ ...form, liters: parseFloat(form.liters), cost: parseFloat(form.cost) });
+    const liters = parseFloat(form.liters);
+    const cost = parseFloat(form.cost);
+    if (liters <= 0) {
+      toast({ title: 'Invalid Liters', description: 'Fuel amount must be greater than zero.', variant: 'destructive' });
+      return;
+    }
+    if (cost <= 0) {
+      toast({ title: 'Invalid Cost', description: 'Fuel cost must be greater than zero.', variant: 'destructive' });
+      return;
+    }
+    createMutation.mutate({ ...form, liters, cost });
   };
 
   const filtered = filterVehicle === 'ALL' ? logs : logs.filter((l: any) => l.vehicleId === filterVehicle);
@@ -92,7 +105,7 @@ export function FuelPage() {
           }}>
             <FileText className="h-4 w-4 mr-2" /> PDF
           </Button>
-          <Button onClick={() => { setForm({ vehicleId: '', liters: '', cost: '', date: new Date().toISOString().split('T')[0] }); setFormError(''); setDialogOpen(true); }} className="gap-2">
+          <Button onClick={() => { setForm({ vehicleId: '', liters: '', cost: '', date: new Date().toISOString().split('T')[0] }); setDialogOpen(true); }} className="gap-2">
             <Plus className="h-4 w-4" /> Add Fuel Log
           </Button>
         </div>
@@ -166,12 +179,6 @@ export function FuelPage() {
         <DialogContent className="max-w-md">
           <DialogHeader><DialogTitle>Add Fuel Log</DialogTitle></DialogHeader>
           <form onSubmit={handleSubmit} className="space-y-4">
-            {formError && (
-              <div className="flex items-center gap-2 rounded-lg border border-red-800 bg-red-950/50 px-3 py-2 text-sm text-red-400">
-                <AlertCircle className="h-4 w-4 flex-shrink-0" />
-                {formError}
-              </div>
-            )}
             <div className="space-y-1.5">
               <Label>Vehicle *</Label>
               <Select value={form.vehicleId} onValueChange={(v) => setForm({ ...form, vehicleId: v })}>

@@ -18,7 +18,7 @@ export function MaintenancePage() {
   const qc = useQueryClient();
   const { toast } = useToast();
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [formError, setFormError] = useState('');
+
   const [form, setForm] = useState({ vehicleId: '', description: '', cost: '' });
   const [filterVehicle, setFilterVehicle] = useState('ALL');
 
@@ -41,7 +41,11 @@ export function MaintenancePage() {
       setDialogOpen(false);
       toast({ title: '🔧 Maintenance log created. Vehicle set to IN_SHOP.', variant: 'success' });
     },
-    onError: (err: any) => setFormError(err?.response?.data?.error || 'Failed to create log'),
+    onError: (err: any) => toast({
+      title: 'Failed to create log',
+      description: err?.response?.data?.error || 'An unexpected error occurred.',
+      variant: 'destructive',
+    }),
   });
 
   const closeMutation = useMutation({
@@ -58,8 +62,12 @@ export function MaintenancePage() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    setFormError('');
-    createMutation.mutate({ vehicleId: form.vehicleId, description: form.description, cost: parseFloat(form.cost) });
+    const cost = parseFloat(form.cost);
+    if (cost < 0) {
+      toast({ title: 'Invalid Cost', description: 'Maintenance cost cannot be negative.', variant: 'destructive' });
+      return;
+    }
+    createMutation.mutate({ vehicleId: form.vehicleId, description: form.description, cost });
   };
 
   const eligibleVehicles = vehicles.filter((v: any) => v.status !== 'ON_TRIP' && v.status !== 'RETIRED');
@@ -112,7 +120,7 @@ export function MaintenancePage() {
           }}>
             <FileText className="h-4 w-4 mr-2" /> PDF
           </Button>
-          <Button onClick={() => { setForm({ vehicleId: '', description: '', cost: '' }); setFormError(''); setDialogOpen(true); }} className="gap-2">
+          <Button onClick={() => { setForm({ vehicleId: '', description: '', cost: '' }); setDialogOpen(true); }} className="gap-2">
             <Plus className="h-4 w-4" /> New Log
           </Button>
         </div>
@@ -229,12 +237,6 @@ export function MaintenancePage() {
         <DialogContent className="max-w-md">
           <DialogHeader><DialogTitle>New Maintenance Log</DialogTitle></DialogHeader>
           <form onSubmit={handleSubmit} className="space-y-4">
-            {formError && (
-              <div className="flex items-center gap-2 rounded-lg border border-red-800 bg-red-950/50 px-3 py-2 text-sm text-red-400">
-                <AlertCircle className="h-4 w-4 flex-shrink-0" />
-                {formError}
-              </div>
-            )}
             <div className="rounded-lg bg-amber-500/10 border border-amber-500/20 px-4 py-3 text-sm text-amber-400">
               ⚠ Creating an open maintenance log will set the vehicle status to <strong>IN_SHOP</strong> and remove it from dispatch selection.
             </div>

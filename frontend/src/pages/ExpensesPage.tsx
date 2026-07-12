@@ -24,7 +24,7 @@ export function ExpensesPage() {
   const qc = useQueryClient();
   const { toast } = useToast();
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [formError, setFormError] = useState('');
+
   const [form, setForm] = useState({ vehicleId: '', type: 'MISC', amount: '', date: new Date().toISOString().split('T')[0], description: '' });
   const [filterVehicle, setFilterVehicle] = useState('ALL');
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
@@ -39,7 +39,11 @@ export function ExpensesPage() {
       setDialogOpen(false);
       toast({ title: 'Expense logged', variant: 'success' });
     },
-    onError: (err: any) => setFormError(err?.response?.data?.error || 'Failed to log expense'),
+    onError: (err: any) => toast({
+      title: 'Failed to log expense',
+      description: err?.response?.data?.error || 'An unexpected error occurred.',
+      variant: 'destructive',
+    }),
   });
 
   const deleteMutation = useMutation({
@@ -53,8 +57,12 @@ export function ExpensesPage() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    setFormError('');
-    createMutation.mutate({ ...form, amount: parseFloat(form.amount) });
+    const amount = parseFloat(form.amount);
+    if (amount <= 0) {
+      toast({ title: 'Invalid Amount', description: 'Expense amount must be greater than zero.', variant: 'destructive' });
+      return;
+    }
+    createMutation.mutate({ ...form, amount });
   };
 
   const filtered = filterVehicle === 'ALL' ? expenses : expenses.filter((e: any) => e.vehicleId === filterVehicle);
@@ -99,7 +107,7 @@ export function ExpensesPage() {
           }}>
             <FileText className="h-4 w-4 mr-2" /> PDF
           </Button>
-          <Button onClick={() => { setForm({ vehicleId: '', type: 'MISC', amount: '', date: new Date().toISOString().split('T')[0], description: '' }); setFormError(''); setDialogOpen(true); }} className="gap-2">
+          <Button onClick={() => { setForm({ vehicleId: '', type: 'MISC', amount: '', date: new Date().toISOString().split('T')[0], description: '' }); setDialogOpen(true); }} className="gap-2">
             <Plus className="h-4 w-4" /> Log Expense
           </Button>
         </div>
@@ -168,12 +176,6 @@ export function ExpensesPage() {
         <DialogContent className="max-w-md">
           <DialogHeader><DialogTitle>Log Expense</DialogTitle></DialogHeader>
           <form onSubmit={handleSubmit} className="space-y-4">
-            {formError && (
-              <div className="flex items-center gap-2 rounded-lg border border-red-800 bg-red-950/50 px-3 py-2 text-sm text-red-400">
-                <AlertCircle className="h-4 w-4 flex-shrink-0" />
-                {formError}
-              </div>
-            )}
             <div className="space-y-1.5">
               <Label>Vehicle *</Label>
               <Select value={form.vehicleId} onValueChange={(v) => setForm({ ...form, vehicleId: v })}>

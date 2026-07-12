@@ -59,7 +59,7 @@ export function VehiclesPage() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState<VehicleForm>(emptyForm);
-  const [formError, setFormError] = useState('');
+
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
 
   const { data: response, isLoading } = useQuery({
@@ -80,7 +80,11 @@ export function VehiclesPage() {
       toast({ title: editingId ? 'Vehicle updated' : 'Vehicle added', variant: 'success' });
     },
     onError: (err: any) => {
-      setFormError(err?.response?.data?.error || 'Failed to save vehicle');
+      toast({
+        title: 'Failed to save vehicle',
+        description: err?.response?.data?.error || 'An unexpected error occurred.',
+        variant: 'destructive',
+      });
     },
   });
 
@@ -103,7 +107,6 @@ export function VehiclesPage() {
   const openCreate = () => {
     setEditingId(null);
     setForm(emptyForm);
-    setFormError('');
     setDialogOpen(true);
   };
 
@@ -119,18 +122,33 @@ export function VehiclesPage() {
       status: v.status,
       region: v.region || '',
     });
-    setFormError('');
     setDialogOpen(true);
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    setFormError('');
+    const maxLoadCapacity = parseFloat(form.maxLoadCapacity);
+    const odometer = parseFloat(form.odometer);
+    const acquisitionCost = parseFloat(form.acquisitionCost);
+
+    if (maxLoadCapacity <= 0) {
+      toast({ title: 'Invalid Capacity', description: 'Max load capacity must be greater than zero.', variant: 'destructive' });
+      return;
+    }
+    if (odometer < 0) {
+      toast({ title: 'Invalid Odometer', description: 'Odometer cannot be negative.', variant: 'destructive' });
+      return;
+    }
+    if (acquisitionCost <= 0) {
+      toast({ title: 'Invalid Cost', description: 'Acquisition cost must be greater than zero.', variant: 'destructive' });
+      return;
+    }
+
     saveMutation.mutate({
       ...form,
-      maxLoadCapacity: parseFloat(form.maxLoadCapacity),
-      odometer: parseFloat(form.odometer),
-      acquisitionCost: parseFloat(form.acquisitionCost),
+      maxLoadCapacity,
+      odometer,
+      acquisitionCost,
       region: form.region || undefined,
     });
   };
@@ -290,12 +308,6 @@ export function VehiclesPage() {
             <DialogTitle>{editingId ? 'Edit Vehicle' : 'Add Vehicle'}</DialogTitle>
           </DialogHeader>
           <form onSubmit={handleSubmit} className="space-y-4">
-            {formError && (
-              <div className="flex items-center gap-2 rounded-lg border border-red-800 bg-red-950/50 px-3 py-2 text-sm text-red-400">
-                <AlertCircle className="h-4 w-4 flex-shrink-0" />
-                {formError}
-              </div>
-            )}
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-1.5">
                 <Label>Registration Number *</Label>
