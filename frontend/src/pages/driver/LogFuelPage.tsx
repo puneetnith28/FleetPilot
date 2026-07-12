@@ -7,6 +7,7 @@ import { useState } from 'react';
 import { useToast } from '@/components/ui/toaster';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
+import { queueAction } from '@/lib/offlineQueue';
 
 export function LogFuelPage() {
   const { data: trip, isLoading } = useQuery({
@@ -48,12 +49,27 @@ export function LogFuelPage() {
       return;
     }
     
-    fuelMutation.mutate({
+    const payload = {
       vehicleId: trip.vehicleId,
       liters: litersVal,
       cost: costVal,
       date: new Date().toISOString(),
-    });
+    };
+
+    if (!navigator.onLine) {
+      queueAction('LOG_FUEL', payload).then(() => {
+        setLiters('');
+        setCost('');
+        toast({
+          title: 'Saved offline',
+          description: 'Fuel log will sync when you regain connectivity.',
+          variant: 'default',
+        });
+      });
+      return;
+    }
+    
+    fuelMutation.mutate(payload);
   };
 
   if (isLoading) {

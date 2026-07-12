@@ -8,6 +8,7 @@ import { useToast } from '@/components/ui/toaster';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
+import { queueAction } from '@/lib/offlineQueue';
 
 export function LogMaintenancePage() {
   const { data: trip, isLoading } = useQuery({
@@ -46,11 +47,25 @@ export function LogMaintenancePage() {
       return;
     }
     
-    maintenanceMutation.mutate({
+    const payload = {
       vehicleId: trip.vehicleId,
       description: description,
       cost: 0, // Driver doesn't know the cost, Fleet Manager will update it
-    });
+    };
+
+    if (!navigator.onLine) {
+      queueAction('LOG_MAINTENANCE', payload).then(() => {
+        setDescription('');
+        toast({
+          title: 'Saved offline',
+          description: 'Maintenance issue will sync when you regain connectivity.',
+          variant: 'default',
+        });
+      });
+      return;
+    }
+    
+    maintenanceMutation.mutate(payload);
   };
 
   if (isLoading) {

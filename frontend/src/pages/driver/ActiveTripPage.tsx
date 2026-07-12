@@ -15,6 +15,7 @@ import {
 } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
+import { queueAction } from '@/lib/offlineQueue';
 
 export function ActiveTripPage() {
   const { data: trip, isLoading } = useQuery({
@@ -60,12 +61,26 @@ export function ActiveTripPage() {
     
     const distance = odo - trip.vehicle.odometer;
     
-    completeMutation.mutate({
+    const payload = {
       id: trip.id,
       finalOdometer: odo,
       actualDistance: distance,
       fuelConsumed: fuelVal,
-    });
+    };
+
+    if (!navigator.onLine) {
+      queueAction('TRIP_COMPLETE', payload).then(() => {
+        setIsCompleteOpen(false);
+        toast({
+          title: 'Saved offline',
+          description: 'Trip completion will sync when you regain connectivity.',
+          variant: 'default',
+        });
+      });
+      return;
+    }
+    
+    completeMutation.mutate(payload);
   };
 
   if (isLoading) {

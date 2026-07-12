@@ -5,10 +5,13 @@ import { Toaster } from '@/components/ui/toaster';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { NotificationBell } from './NotificationBell';
+import { useNetworkStatus } from '@/hooks/useNetworkStatus';
+import { WifiOff, UploadCloud } from 'lucide-react';
 
 export function DriverShell() {
   const { user, logout } = useAuth();
   const location = useLocation();
+  const { isOnline, pendingQueueLength } = useNetworkStatus();
 
   const navItems = [
     { label: 'Trip', path: '/driver/trip', icon: MapPin },
@@ -30,6 +33,21 @@ export function DriverShell() {
           </Button>
         </div>
       </header>
+
+      {/* Offline Banner */}
+      {!isOnline && (
+        <div className="bg-amber-500/10 text-amber-600 border-b border-amber-500/20 px-4 py-2 flex items-center justify-between text-xs font-medium sticky top-14 z-20">
+          <div className="flex items-center gap-2">
+            <WifiOff className="h-4 w-4 shrink-0" />
+            <span>You are offline. Data will be saved locally.</span>
+          </div>
+          {pendingQueueLength > 0 && (
+            <span className="flex items-center gap-1 opacity-80">
+              <UploadCloud className="h-3 w-3" /> {pendingQueueLength} pending
+            </span>
+          )}
+        </div>
+      )}
 
       {/* Main Content Area (padding bottom to account for fixed bottom nav) */}
       <main className="flex-1 w-full max-w-md mx-auto flex flex-col p-4 pb-28 pt-[env(safe-area-inset-top)] overflow-x-hidden">
