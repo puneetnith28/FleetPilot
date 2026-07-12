@@ -11,6 +11,19 @@ const prisma = new PrismaClient();
 // All vehicle routes require auth
 router.use(requireAuth);
 
+// GET /api/vehicles/metadata
+router.get('/metadata', async (req, res) => {
+  const [types, regions] = await Promise.all([
+    prisma.vehicle.groupBy({ by: ['type'] }),
+    prisma.vehicle.groupBy({ by: ['region'], where: { region: { not: null } } }),
+  ]);
+  
+  res.json({
+    types: types.map(t => t.type),
+    regions: regions.map(r => r.region).filter(Boolean),
+  });
+});
+
 // GET /api/vehicles
 router.get('/', async (req, res) => {
   const page = parseInt(req.query.page as string) || 1;

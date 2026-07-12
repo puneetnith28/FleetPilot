@@ -40,6 +40,7 @@ export const authApi = {
 
 // ─── Vehicles ─────────────────────────────────────────────────
 export const vehiclesApi = {
+  metadata: () => api.get('/vehicles/metadata').then((r) => r.data),
   list: (params?: any) => api.get('/vehicles', { params }).then((r) => r.data),
   get: (id: string) => api.get(`/vehicles/${id}`).then((r) => r.data),
   create: (data: unknown) => api.post('/vehicles', data).then((r) => r.data),

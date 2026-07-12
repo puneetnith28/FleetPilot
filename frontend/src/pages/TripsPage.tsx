@@ -28,6 +28,16 @@ const STATUS_VARIANT: Record<TripStatus, any> = {
   CANCELLED: 'destructive',
 };
 
+const FUEL_FACTOR_MAP: Record<string, number> = {
+  VAN: 8,
+  TRUCK: 15,
+  BUS: 12,
+  CAR: 5,
+  TRAILER: 18,
+  OTHER: 10,
+};
+const getFuelFactor = (type?: string) => type && FUEL_FACTOR_MAP[type] ? FUEL_FACTOR_MAP[type] : 10;
+
 interface TripForm {
   source: string;
   destination: string;
@@ -203,55 +213,59 @@ export function TripsPage() {
                 </div>
               </div>
 
-              {routingResult && (
-                <div className="border border-border rounded-lg overflow-hidden h-48 relative z-0">
-                  <MapContainer center={routingResult.geometry[0]} zoom={6} scrollWheelZoom={false} className="h-full w-full">
-                    <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
-                    <Polyline positions={routingResult.geometry} color="hsl(var(--primary))" weight={4} />
-                    <Marker position={routingResult.geometry[0]} />
-                    <Marker position={routingResult.geometry[routingResult.geometry.length - 1]} />
-                  </MapContainer>
-                  {selectedVehicle && (
-                    <div className="absolute bottom-2 right-2 bg-background/90 backdrop-blur border border-border px-3 py-1.5 rounded-md text-xs font-semibold z-[400] shadow-md">
-                      Est. Fuel: {((routingResult.distanceKm / 100) * (selectedVehicle.maxLoadCapacity / 1000) * 8).toFixed(1)} L
-                    </div>
+            {routingResult && (
+              <div className="border border-border rounded-lg overflow-hidden h-48 relative z-0">
+                <MapContainer center={routingResult.geometry[0]} zoom={6} scrollWheelZoom={false} className="h-full w-full">
+                  <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+                  <Polyline positions={routingResult.geometry} color="hsl(var(--primary))" weight={4} />
+                  <Marker position={routingResult.geometry[0]} />
+                  <Marker position={routingResult.geometry[routingResult.geometry.length - 1]} />
+                </MapContainer>
+                {selectedVehicle && (
+                  <div className="absolute bottom-2 right-2 bg-background/90 backdrop-blur border border-border px-3 py-1.5 rounded-md text-xs font-semibold z-[400] shadow-md">
+                    Est. Fuel: {((routingResult.distanceKm / 100) * (selectedVehicle.maxLoadCapacity / 1000) * getFuelFactor(selectedVehicle.type)).toFixed(1)} L
+                  </div>
+                )}
+              </div>
+            )}
+
+            <div className="space-y-1.5">
+              <Label>Vehicle * <span className="text-muted-foreground text-xs">(Available only)</span></Label>
+              <Select value={form.vehicleId} onValueChange={(v) => setForm({ ...form, vehicleId: v })}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select a vehicle..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {availableVehicles.length === 0 && (
+                    <SelectItem value="none" disabled>No available vehicles</SelectItem>
                   )}
-                </div>
-              )}
+                  {availableVehicles.map((v: any) => (
+                    <SelectItem key={v.id} value={v.id}>
+                      {v.registrationNumber} — {v.name} (max {v.maxLoadCapacity.toLocaleString()} kg)
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
 
-              <div className="space-y-1.5">
-                <Label>VEHICLE (AVAILABLE ONLY)</Label>
-                <Select value={form.vehicleId} onValueChange={(v) => setForm({ ...form, vehicleId: v })}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select vehicle" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {availableVehicles.length === 0 && <SelectItem value="none" disabled>No available vehicles</SelectItem>}
-                    {availableVehicles.map((v: any) => (
-                      <SelectItem key={v.id} value={v.id}>
-                        {v.registrationNumber} — {v.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-1.5">
-                <Label>DRIVER (AVAILABLE ONLY)</Label>
-                <Select value={form.driverId} onValueChange={(v) => setForm({ ...form, driverId: v })}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select driver" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {eligibleDrivers.length === 0 && <SelectItem value="none" disabled>No eligible drivers</SelectItem>}
-                    {eligibleDrivers.map((d: any) => (
-                      <SelectItem key={d.id} value={d.id}>
-                        {d.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+            <div className="space-y-1.5">
+              <Label>Driver * <span className="text-muted-foreground text-xs">(Available, valid license only)</span></Label>
+              <Select value={form.driverId} onValueChange={(v) => setForm({ ...form, driverId: v })}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select a driver..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {eligibleDrivers.length === 0 && (
+                    <SelectItem value="none" disabled>No eligible drivers</SelectItem>
+                  )}
+                  {eligibleDrivers.map((d: any) => (
+                    <SelectItem key={d.id} value={d.id}>
+                      {d.name} ({d.licenseCategory}) — Score: {d.safetyScore}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
 
               <div className="space-y-1.5">
                 <Label>CARGO WEIGHT (KG)</Label>
