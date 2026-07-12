@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { PrismaClient } from '@prisma/client';
 import { requireAuth } from '../middleware/auth';
 import { CreateTripSchema, CompleteTripSchema } from '../validators';
+import { broadcast } from '../utils/sse';
 
 const router = Router();
 const prisma = new PrismaClient();
@@ -165,6 +166,8 @@ router.post('/', async (req, res) => {
     include: { vehicle: true, driver: true },
   });
 
+  broadcast('invalidate', { keys: ['trips', 'dashboard'] });
+
   res.status(201).json(trip);
 });
 
@@ -222,6 +225,8 @@ router.post('/:id/dispatch', async (req, res) => {
       data: { status: 'ON_TRIP' },
     }),
   ]);
+
+  broadcast('invalidate', { keys: ['trips', 'dashboard', 'vehicles', 'drivers'] });
 
   res.json(updatedTrip);
 });
@@ -288,6 +293,8 @@ router.post('/:id/complete', async (req, res) => {
     }),
   ]);
 
+  broadcast('invalidate', { keys: ['trips', 'dashboard', 'vehicles', 'drivers'] });
+
   res.json(updatedTrip);
 });
 
@@ -330,6 +337,9 @@ router.post('/:id/cancel', async (req, res) => {
   }
 
   const [updatedTrip] = await prisma.$transaction(updates);
+  
+  broadcast('invalidate', { keys: ['trips', 'dashboard', 'vehicles', 'drivers'] });
+  
   res.json(updatedTrip);
 });
 
@@ -374,6 +384,9 @@ router.put('/:id', async (req, res) => {
     data: parse.data,
     include: { vehicle: true, driver: true },
   });
+  
+  broadcast('invalidate', { keys: ['trips', 'dashboard'] });
+  
   res.json(updated);
 });
 

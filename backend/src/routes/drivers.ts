@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { PrismaClient } from '@prisma/client';
 import { requireAuth } from '../middleware/auth';
 import { DriverSchema, DriverUpdateSchema } from '../validators';
+import { broadcast } from '../utils/sse';
 
 const router = Router();
 const prisma = new PrismaClient();
@@ -76,6 +77,9 @@ router.post('/', async (req, res) => {
       licenseExpiryDate: new Date(parse.data.licenseExpiryDate),
     } as any,
   });
+  
+  broadcast('invalidate', { keys: ['drivers', 'dashboard'] });
+  
   res.status(201).json(driver);
 });
 
@@ -111,6 +115,9 @@ router.put('/:id', async (req, res) => {
     where: { id: req.params.id },
     data: updateData,
   });
+  
+  broadcast('invalidate', { keys: ['drivers', 'dashboard'] });
+  
   res.json(driver);
 });
 
@@ -129,6 +136,9 @@ router.delete('/:id', async (req, res) => {
 
   try {
     await prisma.driver.delete({ where: { id: req.params.id } });
+    
+    broadcast('invalidate', { keys: ['drivers', 'dashboard'] });
+    
     res.json({ message: 'Driver deleted successfully' });
   } catch (error: any) {
     if (error.code === 'P2003') {

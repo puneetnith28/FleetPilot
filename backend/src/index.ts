@@ -11,6 +11,7 @@ import fuelRouter from './routes/fuel';
 import expensesRouter from './routes/expenses';
 import dashboardRouter from './routes/dashboard';
 import reportsRouter from './routes/reports';
+import eventsRouter from './routes/events';
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -34,6 +35,7 @@ app.use('/api/fuel', fuelRouter);
 app.use('/api/expenses', expensesRouter);
 app.use('/api/dashboard', dashboardRouter);
 app.use('/api/reports', reportsRouter);
+app.use('/api/events', eventsRouter);
 
 // ─── Health check ─────────────────────────────────────────────
 app.get('/health', (_req, res) => {

@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { PrismaClient } from '@prisma/client';
 import { requireAuth } from '../middleware/auth';
 import { VehicleSchema, VehicleUpdateSchema } from '../validators';
+import { broadcast } from '../utils/sse';
 
 const router = Router();
 const prisma = new PrismaClient();
@@ -86,6 +87,9 @@ router.post('/', async (req, res) => {
   }
 
   const vehicle = await prisma.vehicle.create({ data: parse.data as any });
+  
+  broadcast('invalidate', { keys: ['vehicles', 'dashboard'] });
+  
   res.status(201).json(vehicle);
 });
 
@@ -118,6 +122,9 @@ router.put('/:id', async (req, res) => {
     where: { id: req.params.id },
     data: parse.data as any,
   });
+  
+  broadcast('invalidate', { keys: ['vehicles', 'dashboard'] });
+  
   res.json(vehicle);
 });
 
@@ -136,6 +143,9 @@ router.delete('/:id', async (req, res) => {
 
   try {
     await prisma.vehicle.delete({ where: { id: req.params.id } });
+    
+    broadcast('invalidate', { keys: ['vehicles', 'dashboard'] });
+    
     res.json({ message: 'Vehicle deleted successfully' });
   } catch (error: any) {
     if (error.code === 'P2003') {
