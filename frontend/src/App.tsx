@@ -7,6 +7,7 @@ import { DashboardPage } from '@/pages/DashboardPage';
 import { VehiclesPage } from '@/pages/VehiclesPage';
 import { VehicleDetailPage } from '@/pages/VehicleDetailPage';
 import { DriversPage } from '@/pages/DriversPage';
+import { DriverDetailPage } from '@/pages/DriverDetailPage';
 import { TripsPage } from '@/pages/TripsPage';
 import { TripDetailPage } from '@/pages/TripDetailPage';
 import { MaintenancePage } from '@/pages/MaintenancePage';
@@ -35,6 +36,7 @@ export default function App() {
             <Route path="/vehicles" element={<VehiclesPage />} />
             <Route path="/vehicles/:id" element={<VehicleDetailPage />} />
             <Route path="/drivers" element={<DriversPage />} />
+            <Route path="/drivers/:id" element={<DriverDetailPage />} />
             <Route path="/trips" element={<TripsPage />} />
             <Route path="/trips/:id" element={<TripDetailPage />} />
             <Route path="/maintenance" element={<MaintenancePage />} />
