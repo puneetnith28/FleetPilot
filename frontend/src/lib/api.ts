@@ -92,7 +92,7 @@ export const expensesApi = {
 
 // ─── Dashboard ────────────────────────────────────────────────
 export const dashboardApi = {
-  get: () => api.get('/dashboard').then((r) => r.data),
+  get: (params?: any) => api.get('/dashboard', { params }).then((r) => r.data),
 };
 
 // ─── Reports ──────────────────────────────────────────────────

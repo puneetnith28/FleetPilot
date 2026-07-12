@@ -8,7 +8,14 @@ const prisma = new PrismaClient();
 router.use(requireAuth);
 
 // GET /api/dashboard — Live KPI aggregation
-router.get('/', async (_req, res) => {
+router.get('/', async (req, res) => {
+  const { type, status, region } = req.query;
+
+  const vehicleWhere: any = {};
+  if (type && type !== 'All') vehicleWhere.type = type;
+  if (status && status !== 'All') vehicleWhere.status = status;
+  if (region && region !== 'All') vehicleWhere.region = region;
+
   const [
     vehicles,
     activeTrips,
@@ -16,7 +23,7 @@ router.get('/', async (_req, res) => {
     driversOnDuty,
     totalDrivers,
   ] = await Promise.all([
-    prisma.vehicle.findMany({ select: { status: true } }),
+    prisma.vehicle.findMany({ where: vehicleWhere, select: { status: true } }),
     prisma.trip.count({ where: { status: 'DISPATCHED' } }),
     prisma.trip.count({ where: { status: 'DRAFT' } }),
     prisma.driver.count({ where: { status: 'ON_TRIP' } }),

@@ -164,18 +164,6 @@ export function DriversPage() {
               onChange={(e) => { setSearch(e.target.value); setPage(1); }}
             />
           </div>
-          <Select value={filterStatus} onValueChange={(v) => { setFilterStatus(v); setPage(1); }}>
-            <SelectTrigger className="w-40">
-              <SelectValue placeholder="All Statuses" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="ALL">All Statuses</SelectItem>
-              <SelectItem value="AVAILABLE">Available</SelectItem>
-              <SelectItem value="ON_TRIP">On Trip</SelectItem>
-              <SelectItem value="OFF_DUTY">Off Duty</SelectItem>
-              <SelectItem value="SUSPENDED">Suspended</SelectItem>
-            </SelectContent>
-          </Select>
         </CardContent>
       </Card>
 
@@ -200,6 +188,7 @@ export function DriversPage() {
                   <TableHead>Category</TableHead>
                   <TableHead>License Expiry</TableHead>
                   <TableHead>Contact</TableHead>
+                  <TableHead>Trip Compl.</TableHead>
                   <TableHead>Safety Score</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
@@ -238,6 +227,7 @@ export function DriversPage() {
                         </div>
                       </TableCell>
                       <TableCell className="text-muted-foreground">{d.contactNumber}</TableCell>
+                      <TableCell className="font-semibold">{d.tripCompletionRate !== undefined ? `${d.tripCompletionRate}%` : 'N/A'}</TableCell>
                       <TableCell>
                         <div className="flex items-center gap-2">
                           <div className="w-16 h-1.5 rounded-full bg-muted overflow-hidden">
@@ -291,17 +281,31 @@ export function DriversPage() {
               </TableBody>
             </Table>
           )}
-          <div className="flex items-center justify-between px-4 py-4 border-t">
-            <span className="text-sm text-muted-foreground">
-              Page {page} of {totalPages}
-            </span>
-            <div className="flex gap-2">
-              <Button variant="outline" size="sm" onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page === 1}>
-                Previous
-              </Button>
-              <Button variant="outline" size="sm" onClick={() => setPage((p) => Math.min(totalPages, p + 1))} disabled={page >= totalPages}>
-                Next
-              </Button>
+          <div className="flex flex-col sm:flex-row items-center justify-between px-4 py-4 border-t gap-4">
+            <div className="flex flex-col gap-1">
+              <span className="text-xs font-semibold text-muted-foreground tracking-wider uppercase mb-1">Toggle Stat</span>
+              <div className="flex flex-wrap items-center gap-2">
+                <Button size="sm" variant={filterStatus === 'ALL' ? 'default' : 'outline'} onClick={() => setFilterStatus('ALL')}>All</Button>
+                <Button size="sm" variant={filterStatus === 'AVAILABLE' ? 'default' : 'outline'} className={filterStatus === 'AVAILABLE' ? 'bg-green-600 hover:bg-green-700' : 'text-green-600 border-green-200 hover:bg-green-50'} onClick={() => setFilterStatus('AVAILABLE')}>Available</Button>
+                <Button size="sm" variant={filterStatus === 'ON_TRIP' ? 'default' : 'outline'} className={filterStatus === 'ON_TRIP' ? 'bg-blue-600 hover:bg-blue-700' : 'text-blue-600 border-blue-200 hover:bg-blue-50'} onClick={() => setFilterStatus('ON_TRIP')}>On Trip</Button>
+                <Button size="sm" variant={filterStatus === 'OFF_DUTY' ? 'default' : 'outline'} className={filterStatus === 'OFF_DUTY' ? 'bg-gray-600 hover:bg-gray-700' : 'text-gray-600 border-gray-200 hover:bg-gray-50'} onClick={() => setFilterStatus('OFF_DUTY')}>Off Duty</Button>
+                <Button size="sm" variant={filterStatus === 'SUSPENDED' ? 'default' : 'outline'} className={filterStatus === 'SUSPENDED' ? 'bg-red-600 hover:bg-red-700' : 'text-red-600 border-red-200 hover:bg-red-50'} onClick={() => setFilterStatus('SUSPENDED')}>Suspended</Button>
+              </div>
+              <p className="text-xs text-orange-500 mt-2 font-medium">Rule: Expired license or Suspended status → blocked from trip assignment</p>
+            </div>
+            
+            <div className="flex flex-col items-end gap-2">
+              <span className="text-sm text-muted-foreground">
+                Page {page} of {totalPages}
+              </span>
+              <div className="flex gap-2">
+                <Button variant="outline" size="sm" onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page === 1}>
+                  Previous
+                </Button>
+                <Button variant="outline" size="sm" onClick={() => setPage((p) => Math.min(totalPages, p + 1))} disabled={page >= totalPages}>
+                  Next
+                </Button>
+              </div>
             </div>
           </div>
         </CardContent>

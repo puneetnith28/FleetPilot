@@ -18,9 +18,38 @@ router.post('/login', async (req, res) => {
   const { email, password } = parse.data;
   const user = await prisma.user.findUnique({ where: { email } });
 
-  if (!user || !(await bcrypt.compare(password, user.passwordHash))) {
+  if (!user) {
     res.status(401).json({ error: 'Invalid email or password' });
     return;
+  }
+
+  if (user.lockedUntil && user.lockedUntil > new Date()) {
+    res.status(423).json({ error: 'Account locked after 5 failed attempts.' });
+    return;
+  }
+
+  if (!(await bcrypt.compare(password, user.passwordHash))) {
+    const attempts = user.failedLoginAttempts + 1;
+    const lockedUntil = attempts >= 5 ? new Date(Date.now() + 15 * 60 * 1000) : null;
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { failedLoginAttempts: attempts, lockedUntil }
+    });
+
+    if (attempts >= 5) {
+      res.status(423).json({ error: 'Account locked after 5 failed attempts.' });
+      return;
+    }
+    res.status(401).json({ error: 'Invalid email or password' });
+    return;
+  }
+
+  // Reset failed attempts on success
+  if (user.failedLoginAttempts > 0) {
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { failedLoginAttempts: 0, lockedUntil: null }
+    });
   }
 
   const token = generateToken({ userId: user.id, email: user.email, role: user.role });

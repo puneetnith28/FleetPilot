@@ -11,6 +11,9 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 import { formatDateTime } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { EmptyState } from '@/components/ui/empty-state';
+import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { useState } from 'react';
 
 function KpiCard({
   title, value, subtitle, icon: Icon, color, pulse,
@@ -50,9 +53,13 @@ const STATUS_BADGE_MAP: Record<string, any> = {
 const PIE_COLORS = ['#22c55e', '#3b82f6', '#f59e0b', '#6b7280'];
 
 export function DashboardPage() {
+  const [filterType, setFilterType] = useState('All');
+  const [filterStatus, setFilterStatus] = useState('All');
+  const [filterRegion, setFilterRegion] = useState('All');
+
   const { data, isLoading, error } = useQuery({
-    queryKey: ['dashboard'],
-    queryFn: dashboardApi.get,
+    queryKey: ['dashboard', filterType, filterStatus, filterRegion],
+    queryFn: () => dashboardApi.get({ type: filterType, status: filterStatus, region: filterRegion }),
     refetchInterval: 30_000,
   });
 
@@ -84,6 +91,38 @@ export function DashboardPage() {
 
   return (
     <div className="space-y-6">
+      {/* Top Filters (Mockup specific) */}
+      <div className="flex items-center gap-4 bg-card p-4 rounded-lg border border-border">
+        <span className="text-xs font-semibold text-muted-foreground tracking-wider uppercase">Filters</span>
+        <Select value={filterType} onValueChange={setFilterType}>
+          <SelectTrigger className="w-32"><SelectValue placeholder="Vehicle Type" /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="All">Vehicle Type: All</SelectItem>
+            <SelectItem value="VAN">Van</SelectItem>
+            <SelectItem value="TRUCK">Truck</SelectItem>
+            <SelectItem value="MINI">Mini</SelectItem>
+          </SelectContent>
+        </Select>
+        <Select value={filterStatus} onValueChange={setFilterStatus}>
+          <SelectTrigger className="w-32"><SelectValue placeholder="Status" /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="All">Status: All</SelectItem>
+            <SelectItem value="AVAILABLE">Available</SelectItem>
+            <SelectItem value="ON_TRIP">On Trip</SelectItem>
+            <SelectItem value="IN_SHOP">In Shop</SelectItem>
+            <SelectItem value="RETIRED">Retired</SelectItem>
+          </SelectContent>
+        </Select>
+        <Select value={filterRegion} onValueChange={setFilterRegion}>
+          <SelectTrigger className="w-32"><SelectValue placeholder="Region" /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="All">Region: All</SelectItem>
+            <SelectItem value="North">North</SelectItem>
+            <SelectItem value="South">South</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
@@ -173,89 +212,91 @@ export function DashboardPage() {
 
       {/* Charts + Recent Trips */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Fleet Status Pie Chart */}
+        {/* Vehicle Status Progress Bars */}
         <Card className="lg:col-span-1">
           <CardHeader>
-            <CardTitle className="text-base">Fleet Status</CardTitle>
+            <CardTitle className="text-base">Vehicle Status</CardTitle>
           </CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={200}>
-              <PieChart>
-                <Pie
-                  data={pieData}
-                  cx="50%"
-                  cy="50%"
-                  innerRadius={55}
-                  outerRadius={80}
-                  paddingAngle={3}
-                  dataKey="value"
-                >
-                  {pieData.map((_, idx) => (
-                    <Cell key={idx} fill={PIE_COLORS[idx % PIE_COLORS.length]} />
-                  ))}
-                </Pie>
-                <Tooltip
-                  contentStyle={{ background: 'hsl(222 47% 9%)', border: '1px solid hsl(222 47% 16%)', borderRadius: 8 }}
-                  labelStyle={{ color: '#f1f5f9' }}
-                />
-                <Legend wrapperStyle={{ fontSize: 12 }} />
-              </PieChart>
-            </ResponsiveContainer>
+          <CardContent className="space-y-6">
+            <div className="space-y-2">
+              <div className="flex justify-between text-sm">
+                <span className="font-medium">Available</span>
+                <span className="text-muted-foreground">{kpis.availableVehicles}</span>
+              </div>
+              <div className="h-4 w-full bg-muted rounded-md overflow-hidden">
+                <div className="h-full bg-green-500" style={{ width: `${(kpis.availableVehicles / (kpis.totalVehicles || 1)) * 100}%` }}></div>
+              </div>
+            </div>
+            <div className="space-y-2">
+              <div className="flex justify-between text-sm">
+                <span className="font-medium">On Trip</span>
+                <span className="text-muted-foreground">{kpis.activeVehicles}</span>
+              </div>
+              <div className="h-4 w-full bg-muted rounded-md overflow-hidden">
+                <div className="h-full bg-blue-500" style={{ width: `${(kpis.activeVehicles / (kpis.totalVehicles || 1)) * 100}%` }}></div>
+              </div>
+            </div>
+            <div className="space-y-2">
+              <div className="flex justify-between text-sm">
+                <span className="font-medium">In Shop</span>
+                <span className="text-muted-foreground">{kpis.inShopVehicles}</span>
+              </div>
+              <div className="h-4 w-full bg-muted rounded-md overflow-hidden">
+                <div className="h-full bg-orange-500" style={{ width: `${(kpis.inShopVehicles / (kpis.totalVehicles || 1)) * 100}%` }}></div>
+              </div>
+            </div>
+            <div className="space-y-2">
+              <div className="flex justify-between text-sm">
+                <span className="font-medium">Retired</span>
+                <span className="text-muted-foreground">{kpis.retiredVehicles}</span>
+              </div>
+              <div className="h-4 w-full bg-muted rounded-md overflow-hidden">
+                <div className="h-full bg-red-500" style={{ width: `${(kpis.retiredVehicles / (kpis.totalVehicles || 1)) * 100}%` }}></div>
+              </div>
+            </div>
           </CardContent>
         </Card>
 
-        {/* Vehicles by Type Bar Chart */}
-        <Card className="lg:col-span-1">
+        {/* Recent Trips Table */}
+        <Card className="lg:col-span-2">
           <CardHeader>
-            <CardTitle className="text-base">Vehicles by Type</CardTitle>
+            <CardTitle className="text-base flex items-center gap-2">Recent Trips</CardTitle>
           </CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={200}>
-              <BarChart data={vehiclesByType} margin={{ top: 0, right: 0, left: -20, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="hsl(222 47% 16%)" />
-                <XAxis dataKey="type" tick={{ fill: '#94a3b8', fontSize: 11 }} />
-                <YAxis tick={{ fill: '#94a3b8', fontSize: 11 }} />
-                <Tooltip
-                  contentStyle={{ background: 'hsl(222 47% 9%)', border: '1px solid hsl(222 47% 16%)', borderRadius: 8 }}
-                  labelStyle={{ color: '#f1f5f9' }}
-                />
-                <Bar dataKey="count" fill="hsl(217 91% 60%)" radius={[4, 4, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
-
-        {/* Recent Trips */}
-        <Card className="lg:col-span-1">
-          <CardHeader>
-            <CardTitle className="text-base">Recent Trips</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            {recentTrips.length === 0 && (
+          <CardContent className="p-0">
+            {recentTrips.length === 0 ? (
               <div className="py-8">
-                <EmptyState 
-                  icon={Route} 
-                  title="No trips found" 
-                  description="Your recent trips will appear here." 
-                />
+                <EmptyState icon={Route} title="No trips found" description="Your recent trips will appear here." />
               </div>
+            ) : (
+              <table className="w-full text-sm">
+                <thead className="bg-muted/50 text-muted-foreground uppercase text-xs">
+                  <tr>
+                    <th className="py-3 px-4 text-left font-medium">Trip</th>
+                    <th className="py-3 px-4 text-left font-medium">Vehicle</th>
+                    <th className="py-3 px-4 text-left font-medium">Driver</th>
+                    <th className="py-3 px-4 text-left font-medium">Status</th>
+                    <th className="py-3 px-4 text-left font-medium">ETA</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border">
+                  {recentTrips.map((trip: any) => {
+                    const etaHours = Math.round(trip.plannedDistance / 60);
+                    const etaString = trip.status === 'COMPLETED' ? '—' : trip.status === 'DRAFT' ? 'Awaiting vehicle' : `${etaHours || 1}h 10m`;
+                    return (
+                      <tr key={trip.id} className="hover:bg-muted/50 transition-colors">
+                        <td className="py-3 px-4 font-medium uppercase tracking-wider">{trip.id.slice(0, 5)}</td>
+                        <td className="py-3 px-4 uppercase">{trip.vehicle?.registrationNumber || '—'}</td>
+                        <td className="py-3 px-4">{trip.driver?.name || '—'}</td>
+                        <td className="py-3 px-4">
+                          <Badge variant={STATUS_BADGE_MAP[trip.status]}>{trip.status.replace('_', ' ')}</Badge>
+                        </td>
+                        <td className="py-3 px-4 text-muted-foreground">{etaString}</td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
             )}
-            {recentTrips.map((trip: any) => (
-              <div key={trip.id} className="flex items-start justify-between gap-2 py-2 border-b border-border/50 last:border-0">
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium truncate">
-                    {trip.source} → {trip.destination}
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    {trip.vehicle?.registrationNumber} · {trip.driver?.name}
-                  </p>
-                  <p className="text-xs text-muted-foreground">{formatDateTime(trip.createdAt)}</p>
-                </div>
-                <Badge variant={STATUS_BADGE_MAP[trip.status] || 'gray'} className="flex-shrink-0">
-                  {trip.status}
-                </Badge>
-              </div>
-            ))}
           </CardContent>
         </Card>
       </div>

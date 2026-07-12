@@ -12,7 +12,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -163,242 +163,98 @@ export function TripsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      {/* Header */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold flex items-center gap-2">
-            <Route className="h-6 w-6 text-primary" /> Trip Management
-          </h1>
-          <p className="text-muted-foreground text-sm mt-1">{total} trips total</p>
+          <h1 className="text-3xl font-bold tracking-tight">Trip Dispatcher</h1>
+          <p className="text-muted-foreground mt-1">
+            Create, manage, and dispatch trips in real-time.
+          </p>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="outline" onClick={() => {
-            const csvData = trips.map((t: any) => ({
-              id: t.id,
-              source: t.source,
-              destination: t.destination,
-              vehicle: t.vehicle?.registrationNumber,
-              driver: t.driver?.name,
-              cargoWeight: t.cargoWeight,
-              plannedDistance: t.plannedDistance,
-              status: t.status,
-              createdAt: t.createdAt,
-            }));
-            exportCSV(csvData, 'trips.csv');
-          }}>
-            <Download className="h-4 w-4 mr-2" /> CSV
-          </Button>
-          <Button variant="outline" onClick={() => {
-            const columns = ['ID', 'Route', 'Vehicle', 'Driver', 'Cargo (kg)', 'Dist (km)', 'Status', 'Date'];
-            const rows = trips.map((t: any) => [
-              t.id.slice(0, 8),
-              `${t.source} to ${t.destination}`,
-              t.vehicle?.registrationNumber,
-              t.driver?.name,
-              t.cargoWeight,
-              t.plannedDistance,
-              t.status,
-              formatDate(t.createdAt),
-            ]);
-            exportPDF('Trips Report', columns, rows, 'trips.pdf');
-          }}>
-            <FileText className="h-4 w-4 mr-2" /> PDF
-          </Button>
-          <Button onClick={() => { setForm(emptyForm); setDialogOpen(true); }} className="gap-2">
-            <Plus className="h-4 w-4" /> New Trip
+          <Button variant="outline" onClick={() => qc.invalidateQueries({ queryKey: ['trips'] })}>
+            <Loader2 className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} /> Refresh
           </Button>
         </div>
       </div>
-      {/* Filters */}
-      <Card>
-        <CardContent className="p-4 flex flex-wrap gap-3">
-          <div className="relative flex-1 min-w-48">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Search source, destination, vehicle..."
-              className="pl-9"
-              value={search}
-              onChange={(e) => { setSearch(e.target.value); setPage(1); }}
-            />
-          </div>
-          <Select value={filterStatus} onValueChange={(v) => { setFilterStatus(v); setPage(1); }}>
-            <SelectTrigger className="w-44">
-              <SelectValue placeholder="All Statuses" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="ALL">All Statuses</SelectItem>
-              <SelectItem value="DRAFT">Draft</SelectItem>
-              <SelectItem value="DISPATCHED">Dispatched</SelectItem>
-              <SelectItem value="COMPLETED">Completed</SelectItem>
-              <SelectItem value="CANCELLED">Cancelled</SelectItem>
-            </SelectContent>
-          </Select>
-          <div className="flex items-center gap-2">
-            <Input type="date" value={dateStart} onChange={(e) => { setDateStart(e.target.value); setPage(1); }} />
-            <span className="text-muted-foreground">-</span>
-            <Input type="date" value={dateEnd} onChange={(e) => { setDateEnd(e.target.value); setPage(1); }} />
-          </div>
-        </CardContent>
-      </Card>
 
-      {/* Table */}
-      <Card>
-        <CardContent className="p-0">
-          {isLoading ? (
-            <div className="flex justify-center py-16">
-              <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-            </div>
-          ) : trips.length === 0 ? (
-            <div className="py-12">
-              <EmptyState 
-                icon={Route} 
-                title="No trips found" 
-                description="Adjust your filters or create a new trip to get started." 
-              />
-            </div>
-          ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Route</TableHead>
-                  <TableHead>Vehicle</TableHead>
-                  <TableHead>Driver</TableHead>
-                  <TableHead>Cargo</TableHead>
-                  <TableHead>Planned Dist.</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Created</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {trips.map((t: any) => (
-                  <TableRow key={t.id}>
-                    <TableCell>
-                      <div className="font-medium">{t.source}</div>
-                      <div className="text-muted-foreground text-xs">→ {t.destination}</div>
-                    </TableCell>
-                    <TableCell>
-                      <span className="font-mono text-primary text-sm">{t.vehicle?.registrationNumber}</span>
-                      <div className="text-xs text-muted-foreground">{t.vehicle?.name}</div>
-                    </TableCell>
-                    <TableCell>
-                      <span className="text-sm">{t.driver?.name}</span>
-                    </TableCell>
-                    <TableCell>{t.cargoWeight.toLocaleString()} kg</TableCell>
-                    <TableCell>{t.plannedDistance} km</TableCell>
-                    <TableCell>
-                      <Badge variant={STATUS_VARIANT[t.status as TripStatus]}>
-                        {t.status}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-muted-foreground text-sm">{formatDate(t.createdAt)}</TableCell>
-                    <TableCell className="text-right">
-                      <Link to={`/trips/${t.id}`}>
-                        <Button size="sm" variant="outline" className="gap-1">
-                          <Eye className="h-3.5 w-3.5" /> View
-                        </Button>
-                      </Link>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          )}
-          <div className="flex items-center justify-between px-4 py-4 border-t">
-            <span className="text-sm text-muted-foreground">
-              Page {page} of {totalPages}
-            </span>
-            <div className="flex gap-2">
-              <Button variant="outline" size="sm" onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page === 1}>
-                Previous
-              </Button>
-              <Button variant="outline" size="sm" onClick={() => setPage((p) => Math.min(totalPages, p + 1))} disabled={page >= totalPages}>
-                Next
-              </Button>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Create Trip Dialog */}
-      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-w-lg">
-          <DialogHeader>
-            <DialogTitle>Create New Trip</DialogTitle>
-          </DialogHeader>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      {/* Split-pane layout */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
+        {/* Left Pane: CREATE TRIP form */}
+        <Card className="lg:col-span-1 sticky top-6">
+          <CardHeader>
+            <CardTitle className="text-base uppercase tracking-wider text-muted-foreground flex items-center gap-2">
+              <Plus className="h-4 w-4" /> Create Trip
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-1.5">
-                <Label>Source / Origin *</Label>
-                <Input value={form.source} onChange={(e) => setForm({ ...form, source: e.target.value })} placeholder="London" required />
+                <Label>SOURCE</Label>
+                <Input value={form.source} onChange={(e) => setForm({ ...form, source: e.target.value })} placeholder="Gandhinagar Depot" required />
               </div>
               <div className="space-y-1.5">
-                <Label>Destination *</Label>
+                <Label>DESTINATION *</Label>
                 <div className="flex gap-2">
-                  <Input value={form.destination} onChange={(e) => setForm({ ...form, destination: e.target.value })} placeholder="Manchester" required className="flex-1" />
+                  <Input value={form.destination} onChange={(e) => setForm({ ...form, destination: e.target.value })} placeholder="Ahmedabad Hub" required className="flex-1" />
                   <Button type="button" onClick={handleCalculateRoute} disabled={isCalculatingRoute || !form.source || !form.destination}>
                     {isCalculatingRoute ? <Loader2 className="h-4 w-4 animate-spin" /> : <Navigation className="h-4 w-4" />}
                   </Button>
                 </div>
               </div>
-            </div>
 
-            {routingResult && (
-              <div className="border border-border rounded-lg overflow-hidden h-48 relative z-0">
-                <MapContainer center={routingResult.geometry[0]} zoom={6} scrollWheelZoom={false} className="h-full w-full">
-                  <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
-                  <Polyline positions={routingResult.geometry} color="hsl(var(--primary))" weight={4} />
-                  <Marker position={routingResult.geometry[0]} />
-                  <Marker position={routingResult.geometry[routingResult.geometry.length - 1]} />
-                </MapContainer>
-                {selectedVehicle && (
-                  <div className="absolute bottom-2 right-2 bg-background/90 backdrop-blur border border-border px-3 py-1.5 rounded-md text-xs font-semibold z-[400] shadow-md">
-                    Est. Fuel: {((routingResult.distanceKm / 100) * (selectedVehicle.maxLoadCapacity / 1000) * 8).toFixed(1)} L
-                  </div>
-                )}
-              </div>
-            )}
-
-            <div className="space-y-1.5">
-              <Label>Vehicle * <span className="text-muted-foreground text-xs">(Available only)</span></Label>
-              <Select value={form.vehicleId} onValueChange={(v) => setForm({ ...form, vehicleId: v })}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select a vehicle..." />
-                </SelectTrigger>
-                <SelectContent>
-                  {availableVehicles.length === 0 && (
-                    <SelectItem value="none" disabled>No available vehicles</SelectItem>
+              {routingResult && (
+                <div className="border border-border rounded-lg overflow-hidden h-48 relative z-0">
+                  <MapContainer center={routingResult.geometry[0]} zoom={6} scrollWheelZoom={false} className="h-full w-full">
+                    <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+                    <Polyline positions={routingResult.geometry} color="hsl(var(--primary))" weight={4} />
+                    <Marker position={routingResult.geometry[0]} />
+                    <Marker position={routingResult.geometry[routingResult.geometry.length - 1]} />
+                  </MapContainer>
+                  {selectedVehicle && (
+                    <div className="absolute bottom-2 right-2 bg-background/90 backdrop-blur border border-border px-3 py-1.5 rounded-md text-xs font-semibold z-[400] shadow-md">
+                      Est. Fuel: {((routingResult.distanceKm / 100) * (selectedVehicle.maxLoadCapacity / 1000) * 8).toFixed(1)} L
+                    </div>
                   )}
-                  {availableVehicles.map((v: any) => (
-                    <SelectItem key={v.id} value={v.id}>
-                      {v.registrationNumber} — {v.name} (max {v.maxLoadCapacity.toLocaleString()} kg)
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+                </div>
+              )}
 
-            <div className="space-y-1.5">
-              <Label>Driver * <span className="text-muted-foreground text-xs">(Available, valid license only)</span></Label>
-              <Select value={form.driverId} onValueChange={(v) => setForm({ ...form, driverId: v })}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select a driver..." />
-                </SelectTrigger>
-                <SelectContent>
-                  {eligibleDrivers.length === 0 && (
-                    <SelectItem value="none" disabled>No eligible drivers</SelectItem>
-                  )}
-                  {eligibleDrivers.map((d: any) => (
-                    <SelectItem key={d.id} value={d.id}>
-                      {d.name} ({d.licenseCategory}) — Score: {d.safetyScore}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
               <div className="space-y-1.5">
-                <Label>Cargo Weight (kg) *</Label>
+                <Label>VEHICLE (AVAILABLE ONLY)</Label>
+                <Select value={form.vehicleId} onValueChange={(v) => setForm({ ...form, vehicleId: v })}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select vehicle" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {availableVehicles.length === 0 && <SelectItem value="none" disabled>No available vehicles</SelectItem>}
+                    {availableVehicles.map((v: any) => (
+                      <SelectItem key={v.id} value={v.id}>
+                        {v.registrationNumber} — {v.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-1.5">
+                <Label>DRIVER (AVAILABLE ONLY)</Label>
+                <Select value={form.driverId} onValueChange={(v) => setForm({ ...form, driverId: v })}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select driver" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {eligibleDrivers.length === 0 && <SelectItem value="none" disabled>No eligible drivers</SelectItem>}
+                    {eligibleDrivers.map((d: any) => (
+                      <SelectItem key={d.id} value={d.id}>
+                        {d.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-1.5">
+                <Label>CARGO WEIGHT (KG)</Label>
                 <Input
                   type="number"
                   min="0.1"
@@ -409,16 +265,10 @@ export function TripsPage() {
                   required
                   className={isOverCapacity ? 'border-red-600 focus-visible:ring-red-600' : ''}
                 />
-                {selectedVehicle && (
-                  <p className={`text-xs ${isOverCapacity ? 'text-red-400 font-medium' : 'text-muted-foreground'}`}>
-                    {isOverCapacity
-                      ? `⚠ Exceeds max capacity of ${selectedVehicle.maxLoadCapacity.toLocaleString()} kg`
-                      : `Max capacity: ${selectedVehicle.maxLoadCapacity.toLocaleString()} kg`}
-                  </p>
-                )}
               </div>
+
               <div className="space-y-1.5">
-                <Label>Planned Distance (km) *</Label>
+                <Label>PLANNED DISTANCE (KM)</Label>
                 <Input
                   type="number"
                   min="1"
@@ -428,29 +278,123 @@ export function TripsPage() {
                   required
                 />
               </div>
+
+              {isOverCapacity && selectedVehicle && (
+                <div className="bg-red-950/40 border-l-2 border-red-500 p-3 text-sm text-red-200 mt-2 space-y-1 rounded-r-md">
+                  <p>Vehicle Capacity: {selectedVehicle.maxLoadCapacity.toLocaleString()} kg</p>
+                  <p>Cargo Weight: {cargoWeight.toLocaleString()} kg</p>
+                  <p className="font-semibold mt-1">✗ Capacity exceeded by {(cargoWeight - selectedVehicle.maxLoadCapacity).toLocaleString()} kg - dispatch blocked</p>
+                </div>
+              )}
+
+              <div className="flex gap-2 pt-2">
+                <Button type="submit" disabled={createMutation.isPending || !form.vehicleId || !form.driverId || isOverCapacity} className="flex-1 bg-blue-600 hover:bg-blue-700">
+                  {createMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : null}
+                  Dispatch
+                </Button>
+                <Button type="button" variant="outline" className="flex-1" onClick={() => setForm(emptyForm)}>Cancel</Button>
+              </div>
+            </form>
+          </CardContent>
+        </Card>
+
+        {/* Right Pane: LIVE BOARD */}
+        <div className="lg:col-span-2 space-y-6">
+          {/* Trip Lifecycle Stepper */}
+          <Card>
+            <CardContent className="p-6">
+              <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground mb-4">Trip Lifecycle</h3>
+              <div className="flex items-center justify-between max-w-lg mx-auto relative">
+                <div className="absolute left-0 top-1/2 -translate-y-1/2 w-full h-0.5 bg-muted -z-10"></div>
+                <div className="flex flex-col items-center gap-2 bg-card px-2">
+                  <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center border-2 border-background"><span className="text-xs font-bold text-muted-foreground">1</span></div>
+                  <span className="text-xs font-medium text-muted-foreground uppercase">Draft</span>
+                </div>
+                <div className="flex flex-col items-center gap-2 bg-card px-2">
+                  <div className="w-8 h-8 rounded-full bg-blue-500/20 text-blue-400 flex items-center justify-center border-2 border-background"><span className="text-xs font-bold">2</span></div>
+                  <span className="text-xs font-medium text-blue-400 uppercase">Dispatched</span>
+                </div>
+                <div className="flex flex-col items-center gap-2 bg-card px-2">
+                  <div className="w-8 h-8 rounded-full bg-green-500/20 text-green-400 flex items-center justify-center border-2 border-background"><span className="text-xs font-bold">3</span></div>
+                  <span className="text-xs font-medium text-green-400 uppercase">Completed</span>
+                </div>
+                <div className="flex flex-col items-center gap-2 bg-card px-2">
+                  <div className="w-8 h-8 rounded-full bg-red-500/20 text-red-400 flex items-center justify-center border-2 border-background"><span className="text-xs font-bold">4</span></div>
+                  <span className="text-xs font-medium text-red-400 uppercase">Cancelled</span>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Live Board List */}
+          <div>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">Live Board</h3>
+              <div className="flex items-center gap-2">
+                <Input placeholder="Search board..." className="h-8 w-48 text-xs" value={search} onChange={(e) => setSearch(e.target.value)} />
+                <Select value={filterStatus} onValueChange={setFilterStatus}>
+                  <SelectTrigger className="h-8 w-32 text-xs">
+                    <SelectValue placeholder="Status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="ALL">All Statuses</SelectItem>
+                    <SelectItem value="DRAFT">Draft</SelectItem>
+                    <SelectItem value="DISPATCHED">Dispatched</SelectItem>
+                    <SelectItem value="COMPLETED">Completed</SelectItem>
+                    <SelectItem value="CANCELLED">Cancelled</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
 
-            <div className="space-y-1.5">
-              <Label>Expected Revenue (£) <span className="text-muted-foreground text-xs">optional</span></Label>
-              <Input
-                type="number"
-                min="0"
-                value={form.revenue}
-                onChange={(e) => setForm({ ...form, revenue: e.target.value })}
-                placeholder="2500"
-              />
+            {isLoading ? (
+              <div className="flex justify-center py-16">
+                <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+              </div>
+            ) : trips.length === 0 ? (
+              <EmptyState icon={Route} title="No trips on board" description="Adjust your filters or dispatch a new trip." />
+            ) : (
+              <div className="space-y-3">
+                {trips.map((t: any) => (
+                  <Card key={t.id} className="hover:border-primary/50 transition-colors">
+                    <CardContent className="p-4 flex items-center justify-between gap-4">
+                      <div className="flex items-center gap-4">
+                        <div className="w-12 h-12 rounded-lg bg-muted flex items-center justify-center flex-shrink-0">
+                          <Route className="h-5 w-5 text-muted-foreground" />
+                        </div>
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <span className="font-mono text-xs font-semibold uppercase text-primary">TR-{t.id.slice(0, 4)}</span>
+                            <Badge variant={STATUS_VARIANT[t.status as TripStatus]}>{t.status}</Badge>
+                          </div>
+                          <h4 className="font-medium mt-1">{t.source} → {t.destination}</h4>
+                          <div className="text-xs text-muted-foreground mt-1 flex gap-3">
+                            <span>Vehicle: {t.vehicle?.registrationNumber || 'None'}</span>
+                            <span>Driver: {t.driver?.name || 'None'}</span>
+                            <span>{t.plannedDistance} km</span>
+                          </div>
+                        </div>
+                      </div>
+                      <Link to={`/trips/${t.id}`}>
+                        <Button size="sm" variant="outline" className="gap-2">
+                          <Eye className="h-4 w-4" /> View Details
+                        </Button>
+                      </Link>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
+            <div className="flex items-center justify-between mt-4">
+              <span className="text-xs text-muted-foreground">Page {page} of {totalPages}</span>
+              <div className="flex gap-2">
+                <Button variant="outline" size="sm" className="h-8 text-xs" onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page === 1}>Previous</Button>
+                <Button variant="outline" size="sm" className="h-8 text-xs" onClick={() => setPage((p) => Math.min(totalPages, p + 1))} disabled={page >= totalPages}>Next</Button>
+              </div>
             </div>
-
-            <DialogFooter className="gap-2 pt-2">
-              <Button type="button" variant="outline" onClick={() => setDialogOpen(false)}>Cancel</Button>
-              <Button type="submit" disabled={createMutation.isPending || !form.vehicleId || !form.driverId}>
-                {createMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : null}
-                Create Trip
-              </Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
