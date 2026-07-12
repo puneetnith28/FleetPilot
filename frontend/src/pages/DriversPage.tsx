@@ -53,7 +53,7 @@ export function DriversPage() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState<DriverForm>(emptyForm);
-  const [formError, setFormError] = useState('');
+
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
 
   const { data: response, isLoading } = useQuery({
@@ -74,7 +74,11 @@ export function DriversPage() {
       toast({ title: editingId ? 'Driver updated' : 'Driver added', variant: 'success' });
     },
     onError: (err: any) => {
-      setFormError(err?.response?.data?.error || 'Failed to save driver');
+      toast({
+        title: 'Failed to save driver',
+        description: err?.response?.data?.error || 'An unexpected error occurred.',
+        variant: 'destructive',
+      });
     },
   });
 
@@ -96,7 +100,6 @@ export function DriversPage() {
   const openCreate = () => {
     setEditingId(null);
     setForm(emptyForm);
-    setFormError('');
     setDialogOpen(true);
   };
 
@@ -111,16 +114,19 @@ export function DriversPage() {
       safetyScore: String(d.safetyScore),
       status: d.status,
     });
-    setFormError('');
     setDialogOpen(true);
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    setFormError('');
+    const safetyScore = parseFloat(form.safetyScore);
+    if (safetyScore < 0 || safetyScore > 100) {
+      toast({ title: 'Invalid Score', description: 'Safety score must be between 0 and 100.', variant: 'destructive' });
+      return;
+    }
     saveMutation.mutate({
       ...form,
-      safetyScore: parseFloat(form.safetyScore),
+      safetyScore,
     });
   };
 
@@ -289,12 +295,6 @@ export function DriversPage() {
             <DialogTitle>{editingId ? 'Edit Driver' : 'Add Driver'}</DialogTitle>
           </DialogHeader>
           <form onSubmit={handleSubmit} className="space-y-4">
-            {formError && (
-              <div className="flex items-center gap-2 rounded-lg border border-red-800 bg-red-950/50 px-3 py-2 text-sm text-red-400">
-                <AlertCircle className="h-4 w-4 flex-shrink-0" />
-                {formError}
-              </div>
-            )}
             <div className="grid grid-cols-2 gap-4">
               <div className="col-span-2 space-y-1.5">
                 <Label>Full Name *</Label>

@@ -54,7 +54,6 @@ export function TripsPage() {
   const [dateEnd, setDateEnd] = useState('');
   const [dialogOpen, setDialogOpen] = useState(false);
   const [form, setForm] = useState<TripForm>(emptyForm);
-  const [formError, setFormError] = useState('');
 
   const { data: tripsResponse, isLoading } = useQuery({
     queryKey: ['trips', page, search, filterStatus, dateStart, dateEnd],
@@ -89,7 +88,11 @@ export function TripsPage() {
       toast({ title: 'Trip created (DRAFT)', variant: 'success' });
     },
     onError: (err: any) => {
-      setFormError(err?.response?.data?.error || 'Failed to create trip');
+      toast({ 
+        title: 'Failed to create trip', 
+        description: err?.response?.data?.error || 'An unexpected error occurred.',
+        variant: 'destructive' 
+      });
     },
   });
 
@@ -97,9 +100,18 @@ export function TripsPage() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    setFormError('');
+    
+    if (cargoWeight <= 0) {
+      toast({ title: 'Invalid Cargo Weight', description: 'Cargo weight must be greater than zero.', variant: 'destructive' });
+      return;
+    }
+    
     if (isOverCapacity) {
-      setFormError(`Cargo weight (${cargoWeight} kg) exceeds this vehicle's max load capacity (${selectedVehicle.maxLoadCapacity} kg)`);
+      toast({ 
+        title: 'Capacity Exceeded', 
+        description: `Cargo weight (${cargoWeight} kg) exceeds this vehicle's max capacity (${selectedVehicle.maxLoadCapacity} kg)`,
+        variant: 'destructive'
+      });
       return;
     }
     createMutation.mutate({
@@ -152,10 +164,9 @@ export function TripsPage() {
           }}>
             <FileText className="h-4 w-4 mr-2" /> PDF
           </Button>
-          <Button onClick={() => { setForm(emptyForm); setFormError(''); setDialogOpen(true); }} className="gap-2">
+          <Button onClick={() => { setForm(emptyForm); setDialogOpen(true); }} className="gap-2">
             <Plus className="h-4 w-4" /> New Trip
           </Button>
-        </div>
         </div>
       </div>
       {/* Filters */}
@@ -273,12 +284,6 @@ export function TripsPage() {
             <DialogTitle>Create New Trip</DialogTitle>
           </DialogHeader>
           <form onSubmit={handleSubmit} className="space-y-4">
-            {formError && (
-              <div className="flex items-center gap-2 rounded-lg border border-red-800 bg-red-950/50 px-3 py-2 text-sm text-red-400">
-                <AlertCircle className="h-4 w-4 flex-shrink-0" />
-                {formError}
-              </div>
-            )}
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-1.5">
                 <Label>Source / Origin *</Label>
