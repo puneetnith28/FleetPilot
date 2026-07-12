@@ -14,9 +14,9 @@ import { DriverDetailPage } from '@/pages/DriverDetailPage';
 import { TripsPage } from '@/pages/TripsPage';
 import { TripDetailPage } from '@/pages/TripDetailPage';
 import { MaintenancePage } from '@/pages/MaintenancePage';
-import { FuelPage } from '@/pages/FuelPage';
-import { ExpensesPage } from '@/pages/ExpensesPage';
-import { ReportsPage } from '@/pages/ReportsPage';
+import { FuelAndExpensesPage } from '@/pages/FuelAndExpensesPage';
+import { AnalyticsPage } from '@/pages/AnalyticsPage';
+import { SettingsPage } from '@/pages/SettingsPage';
 import { ActiveTripPage } from '@/pages/driver/ActiveTripPage';
 import { LogFuelPage } from '@/pages/driver/LogFuelPage';
 import { LogMaintenancePage } from '@/pages/driver/LogMaintenancePage';
@@ -72,9 +72,9 @@ function AppContent() {
         <Route path="trips" element={<TripsPage />} />
         <Route path="trips/:id" element={<TripDetailPage />} />
         <Route path="maintenance" element={<MaintenancePage />} />
-        <Route path="fuel" element={<FuelPage />} />
-        <Route path="expenses" element={<ExpensesPage />} />
-        <Route path="reports" element={<ReportsPage />} />
+        <Route path="fuel-and-expenses" element={<FuelAndExpensesPage />} />
+        <Route path="analytics" element={<AnalyticsPage />} />
+        <Route path="settings" element={<SettingsPage />} />
       </Route>
       <Route path="*" element={<Navigate to="/dashboard" replace />} />
     </Routes>

@@ -11,6 +11,7 @@ import {
   LogOut,
   ChevronRight,
   X,
+  Settings,
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { cn } from '@/lib/utils';
@@ -24,13 +25,13 @@ interface NavItem {
 
 const navItems: NavItem[] = [
   { to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
-  { to: '/vehicles', icon: Truck, label: 'Vehicles', roles: ['FLEET_MANAGER', 'DRIVER', 'SAFETY_OFFICER'] },
+  { to: '/vehicles', icon: Truck, label: 'Fleet', roles: ['FLEET_MANAGER', 'DRIVER', 'SAFETY_OFFICER'] },
   { to: '/drivers', icon: Users, label: 'Drivers', roles: ['FLEET_MANAGER', 'SAFETY_OFFICER', 'DRIVER'] },
   { to: '/trips', icon: Route, label: 'Trips', roles: ['FLEET_MANAGER', 'DRIVER'] },
   { to: '/maintenance', icon: Wrench, label: 'Maintenance', roles: ['FLEET_MANAGER', 'SAFETY_OFFICER'] },
-  { to: '/fuel', icon: Fuel, label: 'Fuel Logs', roles: ['FLEET_MANAGER', 'FINANCIAL_ANALYST'] },
-  { to: '/expenses', icon: Receipt, label: 'Expenses', roles: ['FLEET_MANAGER', 'FINANCIAL_ANALYST'] },
-  { to: '/reports', icon: BarChart3, label: 'Reports', roles: ['FLEET_MANAGER', 'FINANCIAL_ANALYST'] },
+  { to: '/fuel-and-expenses', icon: Fuel, label: 'Fuel & Expenses', roles: ['FLEET_MANAGER', 'FINANCIAL_ANALYST'] },
+  { to: '/analytics', icon: BarChart3, label: 'Analytics', roles: ['FLEET_MANAGER', 'FINANCIAL_ANALYST'] },
+  { to: '/settings', icon: Settings, label: 'Settings', roles: ['FLEET_MANAGER'] },
 ];
 
 const ROLE_LABELS: Record<string, string> = {
