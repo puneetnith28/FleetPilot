@@ -76,6 +76,20 @@ router.get('/', async (_req, res) => {
     ? Math.round((utilized.length / nonRetired.length) * 100)
     : 0;
 
+  // ─── Monthly Revenue ──────────────────────────────────────────
+  const monthlyRevenueMap: Record<string, number> = {};
+  trips.forEach(t => {
+    if (t.completedAt && t.revenue) {
+      const month = t.completedAt.toISOString().slice(0, 7); // YYYY-MM
+      monthlyRevenueMap[month] = (monthlyRevenueMap[month] || 0) + t.revenue;
+    }
+  });
+  // Sort months chronologically
+  const monthlyRevenue = Object.keys(monthlyRevenueMap).sort().map(month => ({
+    month,
+    revenue: monthlyRevenueMap[month]
+  }));
+
   res.json({
     vehicleReports,
     summary: {
@@ -89,7 +103,14 @@ router.get('/', async (_req, res) => {
           ? Math.round((withEfficiency.reduce((s, v) => s + v.fuelEfficiency, 0) / withEfficiency.length) * 100) / 100
           : 0;
       })(),
+      avgRoi: (() => {
+        const withRoi = vehicleReports.filter((v) => v.roi > 0 || v.roi < 0);
+        return withRoi.length > 0
+          ? Math.round((withRoi.reduce((s, v) => s + v.roi, 0) / withRoi.length) * 100) / 100
+          : 0;
+      })(),
     },
+    monthlyRevenue,
   });
 });
 
