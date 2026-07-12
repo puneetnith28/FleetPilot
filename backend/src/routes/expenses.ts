@@ -11,14 +11,29 @@ router.use(requireAuth);
 // GET /api/expenses
 router.get('/', async (req, res) => {
   const { vehicleId } = req.query;
+  const page = parseInt(req.query.page as string) || 1;
+  const limit = parseInt(req.query.limit as string) || 50;
+  
+  const where = vehicleId ? { vehicleId: vehicleId as string } : undefined;
+  
+  const total = await prisma.expense.count({ where });
   const expenses = await prisma.expense.findMany({
-    where: vehicleId ? { vehicleId: vehicleId as string } : undefined,
+    where,
     orderBy: { date: 'desc' },
+    skip: (page - 1) * limit,
+    take: limit,
     include: {
       vehicle: { select: { id: true, registrationNumber: true, name: true } },
     },
   });
-  res.json(expenses);
+  
+  res.json({
+    data: expenses,
+    total,
+    page,
+    limit,
+    totalPages: Math.ceil(total / limit),
+  });
 });
 
 // POST /api/expenses

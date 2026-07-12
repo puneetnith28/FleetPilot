@@ -11,14 +11,29 @@ router.use(requireAuth);
 // GET /api/fuel
 router.get('/', async (req, res) => {
   const { vehicleId } = req.query;
+  const page = parseInt(req.query.page as string) || 1;
+  const limit = parseInt(req.query.limit as string) || 50;
+  
+  const where = vehicleId ? { vehicleId: vehicleId as string } : undefined;
+  
+  const total = await prisma.fuelLog.count({ where });
   const logs = await prisma.fuelLog.findMany({
-    where: vehicleId ? { vehicleId: vehicleId as string } : undefined,
+    where,
     orderBy: { date: 'desc' },
+    skip: (page - 1) * limit,
+    take: limit,
     include: {
       vehicle: { select: { id: true, registrationNumber: true, name: true } },
     },
   });
-  res.json(logs);
+  
+  res.json({
+    data: logs,
+    total,
+    page,
+    limit,
+    totalPages: Math.ceil(total / limit),
+  });
 });
 
 // POST /api/fuel

@@ -69,8 +69,7 @@ export const tripsApi = {
 
 // ─── Maintenance ──────────────────────────────────────────────
 export const maintenanceApi = {
-  list: (vehicleId?: string) =>
-    api.get('/maintenance', { params: vehicleId ? { vehicleId } : {} }).then((r) => r.data),
+  list: (params?: any) => api.get('/maintenance', { params }).then((r) => r.data),
   get: (id: string) => api.get(`/maintenance/${id}`).then((r) => r.data),
   create: (data: unknown) => api.post('/maintenance', data).then((r) => r.data),
   close: (id: string) => api.post(`/maintenance/${id}/close`).then((r) => r.data),
@@ -79,16 +78,14 @@ export const maintenanceApi = {
 
 // ─── Fuel ─────────────────────────────────────────────────────
 export const fuelApi = {
-  list: (vehicleId?: string) =>
-    api.get('/fuel', { params: vehicleId ? { vehicleId } : {} }).then((r) => r.data),
+  list: (params?: any) => api.get('/fuel', { params }).then((r) => r.data),
   create: (data: unknown) => api.post('/fuel', data).then((r) => r.data),
   delete: (id: string) => api.delete(`/fuel/${id}`).then((r) => r.data),
 };
 
 // ─── Expenses ─────────────────────────────────────────────────
 export const expensesApi = {
-  list: (vehicleId?: string) =>
-    api.get('/expenses', { params: vehicleId ? { vehicleId } : {} }).then((r) => r.data),
+  list: (params?: any) => api.get('/expenses', { params }).then((r) => r.data),
   create: (data: unknown) => api.post('/expenses', data).then((r) => r.data),
   delete: (id: string) => api.delete(`/expenses/${id}`).then((r) => r.data),
 };
