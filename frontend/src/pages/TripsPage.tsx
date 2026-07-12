@@ -59,6 +59,7 @@ export function TripsPage() {
   const { data: tripsResponse, isLoading } = useQuery({
     queryKey: ['trips', page, search, filterStatus, dateStart, dateEnd],
     queryFn: () => tripsApi.list({ page, limit: 10, search, status: filterStatus, dateStart, dateEnd }),
+    refetchInterval: 15000,
   });
   const trips = tripsResponse?.data || [];
   const total = tripsResponse?.total || 0;

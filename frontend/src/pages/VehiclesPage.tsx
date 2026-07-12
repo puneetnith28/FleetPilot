@@ -65,6 +65,7 @@ export function VehiclesPage() {
   const { data: response, isLoading } = useQuery({
     queryKey: ['vehicles', page, search, filterStatus, filterType],
     queryFn: () => vehiclesApi.list({ page, limit: 10, search, status: filterStatus, type: filterType }),
+    refetchInterval: 15000,
   });
   const vehicles = response?.data || [];
   const total = response?.total || 0;

@@ -61,6 +61,7 @@ export function DriversPage() {
   const { data: response, isLoading } = useQuery({
     queryKey: ['drivers', page, search, filterStatus],
     queryFn: () => driversApi.list({ page, limit: 10, search, status: filterStatus }),
+    refetchInterval: 15000,
   });
   const drivers = response?.data || [];
   const total = response?.total || 0;
