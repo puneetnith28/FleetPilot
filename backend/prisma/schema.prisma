@@ -94,6 +94,7 @@ model Vehicle {
   maintenanceLogs MaintenanceLog[]
   fuelLogs        FuelLog[]
   expenses        Expense[]
+  documents       VehicleDocument[]
 }
 
 model Driver {
@@ -168,4 +169,14 @@ model Expense {
   createdAt   DateTime    @default(now())
 
   vehicle Vehicle @relation(fields: [vehicleId], references: [id])
+}
+
+model VehicleDocument {
+  id           String   @id @default(cuid())
+  vehicleId    String
+  title        String
+  documentData String   // Base64 storage
+  createdAt    DateTime @default(now())
+
+  vehicle      Vehicle  @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
 }

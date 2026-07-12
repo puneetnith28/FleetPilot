@@ -46,6 +46,8 @@ export const vehiclesApi = {
   create: (data: unknown) => api.post('/vehicles', data).then((r) => r.data),
   update: (id: string, data: unknown) => api.put(`/vehicles/${id}`, data).then((r) => r.data),
   delete: (id: string) => api.delete(`/vehicles/${id}`).then((r) => r.data),
+  uploadDocument: (id: string, data: { title: string; documentData: string }) => api.post(`/vehicles/${id}/documents`, data).then((r) => r.data),
+  getDocument: (id: string, docId: string) => api.get(`/vehicles/${id}/documents/${docId}`).then((r) => r.data),
 };
 
 // ─── Drivers ──────────────────────────────────────────────────
