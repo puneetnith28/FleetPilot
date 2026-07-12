@@ -8,7 +8,15 @@ const prisma = new PrismaClient();
 router.use(requireAuth);
 
 // GET /api/dashboard — Live KPI aggregation
-router.get('/', async (_req, res) => {
+router.get('/', async (req, res) => {
+  const { type, status, region } = req.query;
+  const limit = parseInt(req.query.limit as string) || 5;
+
+  const vehicleWhere: any = {};
+  if (type && type !== 'ALL') vehicleWhere.type = type as string;
+  if (status && status !== 'ALL') vehicleWhere.status = status as string;
+  if (region && region !== 'ALL') vehicleWhere.region = region as string;
+
   const [
     vehicles,
     activeTrips,
@@ -16,9 +24,22 @@ router.get('/', async (_req, res) => {
     driversOnDuty,
     totalDrivers,
   ] = await Promise.all([
-    prisma.vehicle.findMany({ select: { status: true } }),
-    prisma.trip.count({ where: { status: 'DISPATCHED' } }),
-    prisma.trip.count({ where: { status: 'DRAFT' } }),
+    prisma.vehicle.findMany({ 
+      where: vehicleWhere,
+      select: { status: true } 
+    }),
+    prisma.trip.count({ 
+      where: { 
+        status: 'DISPATCHED',
+        vehicle: Object.keys(vehicleWhere).length > 0 ? vehicleWhere : undefined
+      } 
+    }),
+    prisma.trip.count({ 
+      where: { 
+        status: 'DRAFT',
+        vehicle: Object.keys(vehicleWhere).length > 0 ? vehicleWhere : undefined
+      } 
+    }),
     prisma.driver.count({ where: { status: 'ON_TRIP' } }),
     prisma.driver.count({ where: { status: { not: 'SUSPENDED' } } }),
   ]);
@@ -42,12 +63,16 @@ router.get('/', async (_req, res) => {
   // Vehicle breakdown by type
   const vehiclesByType = await prisma.vehicle.groupBy({
     by: ['type'],
+    where: vehicleWhere,
     _count: { type: true },
   });
 
   // Recent trips
   const recentTrips = await prisma.trip.findMany({
-    take: 5,
+    where: {
+      vehicle: Object.keys(vehicleWhere).length > 0 ? vehicleWhere : undefined
+    },
+    take: limit,
     orderBy: { createdAt: 'desc' },
     include: {
       vehicle: { select: { registrationNumber: true, name: true } },

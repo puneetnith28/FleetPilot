@@ -23,8 +23,8 @@ const STATUS_VARIANT: Record<VehicleStatus, any> = {
   RETIRED: 'gray',
 };
 
-const VEHICLE_TYPES = ['VAN', 'TRUCK', 'BUS', 'CAR', 'TRAILER', 'OTHER'];
-const REGIONS = ['North', 'South', 'East', 'West', 'Central'];
+const FALLBACK_TYPES = ['VAN', 'TRUCK', 'BUS', 'CAR', 'TRAILER', 'OTHER'];
+const FALLBACK_REGIONS = ['North', 'South', 'East', 'West', 'Central'];
 
 interface VehicleForm {
   registrationNumber: string;
@@ -70,6 +70,14 @@ export function VehiclesPage() {
   const vehicles = response?.data || [];
   const total = response?.total || 0;
   const totalPages = response?.totalPages || 1;
+
+  const { data: metadata } = useQuery({
+    queryKey: ['vehicles', 'metadata'],
+    queryFn: vehiclesApi.metadata,
+  });
+
+  const vehicleTypes = metadata?.types?.length > 0 ? metadata.types : FALLBACK_TYPES;
+  const regions = metadata?.regions?.length > 0 ? metadata.regions : FALLBACK_REGIONS;
 
   const saveMutation = useMutation({
     mutationFn: (data: any) =>
@@ -154,7 +162,7 @@ export function VehiclesPage() {
     });
   };
 
-  const uniqueTypes = [...new Set(vehicles.map((v: any) => v.type))];
+  const uniqueTypes = [...new Set([...vehicleTypes, ...vehicles.map((v: any) => v.type)])];
 
   return (
     <div className="space-y-6">
@@ -324,7 +332,7 @@ export function VehiclesPage() {
                 <Select value={form.type} onValueChange={(v) => setForm({ ...form, type: v })}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    {VEHICLE_TYPES.map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}
+                    {vehicleTypes.map((t: string) => <SelectItem key={t} value={t}>{t}</SelectItem>)}
                   </SelectContent>
                 </Select>
               </div>
@@ -379,7 +387,7 @@ export function VehiclesPage() {
                   <SelectTrigger><SelectValue placeholder="Select region" /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="NONE">No region</SelectItem>
-                    {REGIONS.map((r) => <SelectItem key={r} value={r}>{r}</SelectItem>)}
+                    {regions.map((r: string) => <SelectItem key={r} value={r}>{r}</SelectItem>)}
                   </SelectContent>
                 </Select>
               </div>

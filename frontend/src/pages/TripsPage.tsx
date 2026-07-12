@@ -28,6 +28,16 @@ const STATUS_VARIANT: Record<TripStatus, any> = {
   CANCELLED: 'destructive',
 };
 
+const FUEL_FACTOR_MAP: Record<string, number> = {
+  VAN: 8,
+  TRUCK: 15,
+  BUS: 12,
+  CAR: 5,
+  TRAILER: 18,
+  OTHER: 10,
+};
+const getFuelFactor = (type?: string) => type && FUEL_FACTOR_MAP[type] ? FUEL_FACTOR_MAP[type] : 10;
+
 interface TripForm {
   source: string;
   destination: string;
@@ -352,7 +362,7 @@ export function TripsPage() {
                 </MapContainer>
                 {selectedVehicle && (
                   <div className="absolute bottom-2 right-2 bg-background/90 backdrop-blur border border-border px-3 py-1.5 rounded-md text-xs font-semibold z-[400] shadow-md">
-                    Est. Fuel: {((routingResult.distanceKm / 100) * (selectedVehicle.maxLoadCapacity / 1000) * 8).toFixed(1)} L
+                    Est. Fuel: {((routingResult.distanceKm / 100) * (selectedVehicle.maxLoadCapacity / 1000) * getFuelFactor(selectedVehicle.type)).toFixed(1)} L
                   </div>
                 )}
               </div>
