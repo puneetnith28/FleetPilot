@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { maintenanceApi, vehiclesApi } from '@/lib/api';
-import { Plus, Loader2, AlertCircle, Wrench, CheckCircle2, Clock } from 'lucide-react';
+import { Plus, Loader2, AlertCircle, Wrench, CheckCircle2, Clock, Download, FileText } from 'lucide-react';
+import { exportCSV, exportPDF } from '@/lib/exportUtils';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -81,9 +82,40 @@ export function MaintenancePage() {
             {openLogs} open · Total cost: {formatCurrency(totalCost)}
           </p>
         </div>
-        <Button onClick={() => { setForm({ vehicleId: '', description: '', cost: '' }); setFormError(''); setDialogOpen(true); }} className="gap-2">
-          <Plus className="h-4 w-4" /> New Log
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" onClick={() => {
+            const csvData = filtered.map((l: any) => ({
+              id: l.id,
+              vehicle: l.vehicle?.registrationNumber,
+              description: l.description,
+              cost: l.cost,
+              status: l.status,
+              createdAt: l.createdAt,
+              closedAt: l.closedAt,
+            }));
+            exportCSV(csvData, 'maintenance.csv');
+          }}>
+            <Download className="h-4 w-4 mr-2" /> CSV
+          </Button>
+          <Button variant="outline" onClick={() => {
+            const columns = ['ID', 'Vehicle', 'Description', 'Cost (£)', 'Status', 'Created', 'Closed'];
+            const rows = filtered.map((l: any) => [
+              l.id.slice(0, 8),
+              l.vehicle?.registrationNumber,
+              l.description,
+              l.cost,
+              l.status,
+              formatDateTime(l.createdAt),
+              l.closedAt ? formatDateTime(l.closedAt) : '-',
+            ]);
+            exportPDF('Maintenance Logs', columns, rows, 'maintenance.pdf');
+          }}>
+            <FileText className="h-4 w-4 mr-2" /> PDF
+          </Button>
+          <Button onClick={() => { setForm({ vehicleId: '', description: '', cost: '' }); setFormError(''); setDialogOpen(true); }} className="gap-2">
+            <Plus className="h-4 w-4" /> New Log
+          </Button>
+        </div>
       </div>
 
       {/* Summary cards */}

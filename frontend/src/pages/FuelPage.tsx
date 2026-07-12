@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { fuelApi, vehiclesApi } from '@/lib/api';
-import { Plus, Trash2, Loader2, AlertCircle, Fuel } from 'lucide-react';
+import { Plus, Trash2, Loader2, AlertCircle, Fuel, Download, FileText } from 'lucide-react';
+import { exportCSV, exportPDF } from '@/lib/exportUtils';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -65,9 +66,36 @@ export function FuelPage() {
             {logs.length} entries · {Math.round(totalLiters * 10) / 10} L total · {formatCurrency(totalCost)} spent
           </p>
         </div>
-        <Button onClick={() => { setForm({ vehicleId: '', liters: '', cost: '', date: new Date().toISOString().split('T')[0] }); setFormError(''); setDialogOpen(true); }} className="gap-2">
-          <Plus className="h-4 w-4" /> Add Fuel Log
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" onClick={() => {
+            const csvData = filtered.map((l: any) => ({
+              id: l.id,
+              vehicle: l.vehicle?.registrationNumber,
+              date: l.date,
+              liters: l.liters,
+              cost: l.cost,
+            }));
+            exportCSV(csvData, 'fuel-logs.csv');
+          }}>
+            <Download className="h-4 w-4 mr-2" /> CSV
+          </Button>
+          <Button variant="outline" onClick={() => {
+            const columns = ['ID', 'Vehicle', 'Date', 'Liters', 'Cost (£)'];
+            const rows = filtered.map((l: any) => [
+              l.id.slice(0, 8),
+              l.vehicle?.registrationNumber,
+              formatDate(l.date),
+              l.liters.toFixed(1),
+              l.cost,
+            ]);
+            exportPDF('Fuel Logs Report', columns, rows, 'fuel-logs.pdf');
+          }}>
+            <FileText className="h-4 w-4 mr-2" /> PDF
+          </Button>
+          <Button onClick={() => { setForm({ vehicleId: '', liters: '', cost: '', date: new Date().toISOString().split('T')[0] }); setFormError(''); setDialogOpen(true); }} className="gap-2">
+            <Plus className="h-4 w-4" /> Add Fuel Log
+          </Button>
+        </div>
       </div>
 
       <div className="flex gap-3">

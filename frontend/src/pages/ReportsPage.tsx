@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { reportsApi } from '@/lib/api';
+import { exportCSV, exportPDF } from '@/lib/exportUtils';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
   ResponsiveContainer, LineChart, Line, Legend, ScatterChart, Scatter
@@ -8,7 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Loader2, AlertCircle, BarChart3, Download, TrendingUp, DollarSign } from 'lucide-react';
+import { Loader2, AlertCircle, BarChart3, Download, TrendingUp, DollarSign, FileText } from 'lucide-react';
 import { formatCurrency } from '@/lib/utils';
 
 const CHART_STYLE = {
@@ -16,27 +17,7 @@ const CHART_STYLE = {
   labelStyle: { color: '#f1f5f9' },
 };
 
-function exportCSV(data: any[], filename: string) {
-  if (!data.length) return;
-  const headers = Object.keys(data[0]);
-  const csv = [
-    headers.join(','),
-    ...data.map((row) =>
-      headers.map((h) => {
-        const val = row[h];
-        if (typeof val === 'string' && val.includes(',')) return `"${val}"`;
-        return val ?? '';
-      }).join(',')
-    ),
-  ].join('\n');
-  const blob = new Blob([csv], { type: 'text/csv' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = filename;
-  a.click();
-  URL.revokeObjectURL(url);
-}
+
 
 export function ReportsPage() {
   const { data, isLoading, error } = useQuery({
@@ -98,13 +79,28 @@ export function ReportsPage() {
             Fleet utilization: {summary.fleetUtilization}% · Revenue: {formatCurrency(summary.totalRevenue)} · Costs: {formatCurrency(summary.totalOperationalCost)}
           </p>
         </div>
-        <Button
-          variant="outline"
-          onClick={() => exportCSV(csvData, 'fleetpilot-report.csv')}
-          className="gap-2"
-        >
-          <Download className="h-4 w-4" /> Export CSV
-        </Button>
+        <div className="flex gap-2">
+          <Button
+            variant="outline"
+            onClick={() => exportCSV(csvData, 'fleetpilot-report.csv')}
+            className="gap-2"
+          >
+            <Download className="h-4 w-4" /> Export CSV
+          </Button>
+          <Button
+            variant="outline"
+            onClick={() => {
+              const columns = ['Registration', 'Name', 'Trips', 'Distance', 'Fuel (L)', 'Efficiency (km/L)', 'Op Cost', 'Revenue', 'ROI %'];
+              const rows = csvData.map((v: any) => [
+                v.registration, v.name, v.totalTrips, v.totalDistance_km, v.totalFuel_L, v.fuelEfficiency_kmPerL, v.totalOperationalCost_GBP, v.totalRevenue_GBP, v.roi_percent
+              ]);
+              exportPDF('Fleet Analytics Report', columns, rows, 'fleetpilot-report.pdf');
+            }}
+            className="gap-2"
+          >
+            <FileText className="h-4 w-4" /> Export PDF
+          </Button>
+        </div>
       </div>
 
       {/* Summary Cards */}
@@ -189,9 +185,20 @@ export function ReportsPage() {
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle className="text-base">Per-Vehicle Analytics</CardTitle>
-          <Button variant="outline" size="sm" onClick={() => exportCSV(csvData, 'fleetpilot-report.csv')} className="gap-1">
-            <Download className="h-3.5 w-3.5" /> CSV
-          </Button>
+          <div className="flex gap-2">
+            <Button variant="outline" size="sm" onClick={() => exportCSV(csvData, 'fleetpilot-report.csv')} className="gap-1">
+              <Download className="h-3.5 w-3.5" /> CSV
+            </Button>
+            <Button variant="outline" size="sm" onClick={() => {
+              const columns = ['Registration', 'Name', 'Trips', 'Distance', 'Fuel (L)', 'Efficiency (km/L)', 'Op Cost', 'Revenue', 'ROI %'];
+              const rows = csvData.map((v: any) => [
+                v.registration, v.name, v.totalTrips, v.totalDistance_km, v.totalFuel_L, v.fuelEfficiency_kmPerL, v.totalOperationalCost_GBP, v.totalRevenue_GBP, v.roi_percent
+              ]);
+              exportPDF('Fleet Analytics Report', columns, rows, 'fleetpilot-report.pdf');
+            }} className="gap-1">
+              <FileText className="h-3.5 w-3.5" /> PDF
+            </Button>
+          </div>
         </CardHeader>
         <CardContent className="p-0">
           <div className="overflow-x-auto">

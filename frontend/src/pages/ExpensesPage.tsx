@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { expensesApi, vehiclesApi } from '@/lib/api';
-import { Plus, Trash2, Loader2, AlertCircle, Receipt } from 'lucide-react';
+import { Plus, Trash2, Loader2, AlertCircle, Receipt, Download, FileText } from 'lucide-react';
+import { exportCSV, exportPDF } from '@/lib/exportUtils';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -70,9 +71,38 @@ export function ExpensesPage() {
             {expenses.length} entries · Total: {formatCurrency(totalAmount)}
           </p>
         </div>
-        <Button onClick={() => { setForm({ vehicleId: '', type: 'MISC', amount: '', date: new Date().toISOString().split('T')[0], description: '' }); setFormError(''); setDialogOpen(true); }} className="gap-2">
-          <Plus className="h-4 w-4" /> Log Expense
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" onClick={() => {
+            const csvData = filtered.map((e: any) => ({
+              id: e.id,
+              vehicle: e.vehicle?.registrationNumber,
+              date: e.date,
+              type: e.type,
+              description: e.description,
+              amount: e.amount,
+            }));
+            exportCSV(csvData, 'expenses.csv');
+          }}>
+            <Download className="h-4 w-4 mr-2" /> CSV
+          </Button>
+          <Button variant="outline" onClick={() => {
+            const columns = ['ID', 'Vehicle', 'Date', 'Type', 'Description', 'Amount (£)'];
+            const rows = filtered.map((e: any) => [
+              e.id.slice(0, 8),
+              e.vehicle?.registrationNumber,
+              formatDate(e.date),
+              e.type,
+              e.description,
+              e.amount,
+            ]);
+            exportPDF('Expenses Report', columns, rows, 'expenses.pdf');
+          }}>
+            <FileText className="h-4 w-4 mr-2" /> PDF
+          </Button>
+          <Button onClick={() => { setForm({ vehicleId: '', type: 'MISC', amount: '', date: new Date().toISOString().split('T')[0], description: '' }); setFormError(''); setDialogOpen(true); }} className="gap-2">
+            <Plus className="h-4 w-4" /> Log Expense
+          </Button>
+        </div>
       </div>
 
       <div className="flex gap-3">

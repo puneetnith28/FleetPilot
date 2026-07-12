@@ -2,7 +2,8 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { tripsApi, vehiclesApi, driversApi } from '@/lib/api';
-import { Plus, Search, Eye, Loader2, AlertCircle, Route, X } from 'lucide-react';
+import { Plus, Search, Eye, Loader2, AlertCircle, Route, X, Download, FileText } from 'lucide-react';
+import { exportCSV, exportPDF } from '@/lib/exportUtils';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -118,11 +119,45 @@ export function TripsPage() {
           </h1>
           <p className="text-muted-foreground text-sm mt-1">{total} trips total</p>
         </div>
-        <Button onClick={() => { setForm(emptyForm); setFormError(''); setDialogOpen(true); }} className="gap-2">
-          <Plus className="h-4 w-4" /> New Trip
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" onClick={() => {
+            const csvData = trips.map((t: any) => ({
+              id: t.id,
+              source: t.source,
+              destination: t.destination,
+              vehicle: t.vehicle?.registrationNumber,
+              driver: t.driver?.name,
+              cargoWeight: t.cargoWeight,
+              plannedDistance: t.plannedDistance,
+              status: t.status,
+              createdAt: t.createdAt,
+            }));
+            exportCSV(csvData, 'trips.csv');
+          }}>
+            <Download className="h-4 w-4 mr-2" /> CSV
+          </Button>
+          <Button variant="outline" onClick={() => {
+            const columns = ['ID', 'Route', 'Vehicle', 'Driver', 'Cargo (kg)', 'Dist (km)', 'Status', 'Date'];
+            const rows = trips.map((t: any) => [
+              t.id.slice(0, 8),
+              `${t.source} to ${t.destination}`,
+              t.vehicle?.registrationNumber,
+              t.driver?.name,
+              t.cargoWeight,
+              t.plannedDistance,
+              t.status,
+              formatDate(t.createdAt),
+            ]);
+            exportPDF('Trips Report', columns, rows, 'trips.pdf');
+          }}>
+            <FileText className="h-4 w-4 mr-2" /> PDF
+          </Button>
+          <Button onClick={() => { setForm(emptyForm); setFormError(''); setDialogOpen(true); }} className="gap-2">
+            <Plus className="h-4 w-4" /> New Trip
+          </Button>
+        </div>
+        </div>
       </div>
-
       {/* Filters */}
       <Card>
         <CardContent className="p-4 flex flex-wrap gap-3">
