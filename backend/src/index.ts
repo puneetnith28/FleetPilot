@@ -14,6 +14,7 @@ import reportsRouter from './routes/reports';
 import eventsRouter from './routes/events';
 import notificationsRouter from './routes/notifications';
 import driverPortalRouter from './routes/driver-portal';
+import { startCronJobs } from './jobs/cron';
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -58,6 +59,7 @@ app.use((err: any, _req: express.Request, res: express.Response, _next: express.
 
 app.listen(PORT, () => {
   console.log(`🚀 FleetPilot API running on port ${PORT}`);
+  startCronJobs();
 });
 
 export default app;

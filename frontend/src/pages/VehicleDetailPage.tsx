@@ -5,18 +5,50 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { formatCurrency, formatDate } from '@/lib/utils';
-import { Loader2, ArrowLeft, Truck, Wrench, Fuel, DollarSign, Calendar, Navigation } from 'lucide-react';
+import { Loader2, ArrowLeft, Truck, Wrench, Fuel, DollarSign, Calendar, Navigation, FileText, Upload, Plus } from 'lucide-react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useState } from 'react';
 
 export function VehicleDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const qc = useQueryClient();
+
+  const [docDialogOpen, setDocDialogOpen] = useState(false);
+  const [docTitle, setDocTitle] = useState('');
+  const [docFile, setDocFile] = useState<File | null>(null);
 
   const { data: vehicle, isLoading, error } = useQuery({
     queryKey: ['vehicle', id],
     queryFn: () => vehiclesApi.get(id!),
     enabled: !!id,
   });
+
+  const uploadDocMutation = useMutation({
+    mutationFn: (data: { title: string; documentData: string }) => vehiclesApi.uploadDocument(id!, data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['vehicle', id] });
+      setDocDialogOpen(false);
+      setDocTitle('');
+      setDocFile(null);
+    },
+  });
+
+  const handleDocSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!docTitle || !docFile) return;
+
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      const base64String = reader.result as string;
+      uploadDocMutation.mutate({ title: docTitle, documentData: base64String });
+    };
+    reader.readAsDataURL(docFile);
+  };
 
   if (isLoading) {
     return (
@@ -115,48 +147,104 @@ export function VehicleDetailPage() {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Recent Trips */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base flex items-center gap-2">
-              <Navigation className="h-4 w-4" /> Recent Trips
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="p-0">
-            {vehicle.trips?.length === 0 ? (
-              <p className="text-muted-foreground text-sm p-6 text-center">No trips recorded</p>
-            ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Route</TableHead>
-                    <TableHead>Driver</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead className="text-right">Date</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {vehicle.trips?.slice(0, 5).map((trip: any) => (
-                    <TableRow key={trip.id}>
-                      <TableCell className="font-medium">
-                        {trip.source} → {trip.destination}
-                      </TableCell>
-                      <TableCell>{trip.driver?.name}</TableCell>
-                      <TableCell>
-                        <Badge variant="outline">{trip.status}</Badge>
-                      </TableCell>
-                      <TableCell className="text-right text-muted-foreground text-sm">
-                        {formatDate(trip.createdAt)}
-                      </TableCell>
+        <div className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base flex items-center gap-2">
+                <Navigation className="h-4 w-4" /> Recent Trips
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-0">
+              {vehicle.trips?.length === 0 ? (
+                <p className="text-muted-foreground text-sm p-6 text-center">No trips recorded</p>
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Route</TableHead>
+                      <TableHead>Driver</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead className="text-right">Date</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            )}
-            <div className="p-4 border-t border-border/50 text-center">
-              <Button variant="link" size="sm" onClick={() => navigate('/trips')}>View All Trips</Button>
-            </div>
-          </CardContent>
-        </Card>
+                  </TableHeader>
+                  <TableBody>
+                    {vehicle.trips?.slice(0, 5).map((trip: any) => (
+                      <TableRow key={trip.id}>
+                        <TableCell className="font-medium">
+                          {trip.source} → {trip.destination}
+                        </TableCell>
+                        <TableCell>{trip.driver?.name}</TableCell>
+                        <TableCell>
+                          <Badge variant="outline">{trip.status}</Badge>
+                        </TableCell>
+                        <TableCell className="text-right text-muted-foreground text-sm">
+                          {formatDate(trip.createdAt)}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              )}
+              <div className="p-4 border-t border-border/50 text-center">
+                <Button variant="link" size="sm" onClick={() => navigate('/trips')}>View All Trips</Button>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Documents */}
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-base flex items-center gap-2">
+                <FileText className="h-4 w-4" /> Documents
+              </CardTitle>
+              <Button size="sm" variant="outline" className="gap-1" onClick={() => setDocDialogOpen(true)}>
+                <Plus className="h-3.5 w-3.5" /> Add
+              </Button>
+            </CardHeader>
+            <CardContent className="p-0">
+              {vehicle.documents?.length === 0 ? (
+                <p className="text-muted-foreground text-sm p-6 text-center">No documents uploaded</p>
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Title</TableHead>
+                      <TableHead>Uploaded</TableHead>
+                      <TableHead className="text-right">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {vehicle.documents?.map((doc: any) => (
+                      <TableRow key={doc.id}>
+                        <TableCell className="font-medium">{doc.title}</TableCell>
+                        <TableCell className="text-muted-foreground text-sm">{formatDate(doc.createdAt)}</TableCell>
+                        <TableCell className="text-right">
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            onClick={async () => {
+                              try {
+                                const fullDoc = await vehiclesApi.getDocument(vehicle.id, doc.id);
+                                const newWindow = window.open();
+                                if (newWindow) {
+                                  newWindow.document.write(`<iframe src="${fullDoc.documentData}" width="100%" height="100%" style="border:none;"></iframe>`);
+                                }
+                              } catch (e) {
+                                console.error('Failed to load document');
+                              }
+                            }}
+                          >
+                            View
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              )}
+            </CardContent>
+          </Card>
+        </div>
 
         {/* Recent Maintenance & Fuel */}
         <div className="space-y-6">
@@ -233,6 +321,31 @@ export function VehicleDetailPage() {
           </Card>
         </div>
       </div>
+
+      <Dialog open={docDialogOpen} onOpenChange={setDocDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Upload Document</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleDocSubmit} className="space-y-4">
+            <div className="space-y-2">
+              <Label>Document Title *</Label>
+              <Input value={docTitle} onChange={(e) => setDocTitle(e.target.value)} placeholder="e.g. Insurance 2024" required />
+            </div>
+            <div className="space-y-2">
+              <Label>File (Image or PDF) *</Label>
+              <Input type="file" accept="image/*,application/pdf" onChange={(e) => setDocFile(e.target.files?.[0] || null)} required />
+            </div>
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => setDocDialogOpen(false)}>Cancel</Button>
+              <Button type="submit" disabled={uploadDocMutation.isPending || !docFile || !docTitle}>
+                {uploadDocMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <Upload className="h-4 w-4 mr-1" />}
+                Upload
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
